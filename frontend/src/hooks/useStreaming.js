@@ -61,9 +61,14 @@ export function useStreaming() {
           }
 
           try {
-            const { text } = JSON.parse(data);
-            if (text) {
-              bufferRef.current += text;
+            const parsed = JSON.parse(data);
+            if (parsed.error) {
+              setError(parsed.error);
+              setStreaming(false);
+              return;
+            }
+            if (parsed.text) {
+              bufferRef.current += parsed.text;
               setStreamText(bufferRef.current);
             }
           } catch {

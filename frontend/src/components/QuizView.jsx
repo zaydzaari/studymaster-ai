@@ -59,7 +59,6 @@ export default function QuizView({ result, onComplete, addToast }) {
       setTimeLeft(30);
       setTimerActive(timePressure);
     } else {
-      const score = answers.filter(a => a.correct).length + (answers[answers.length - 1]?.correct ? 0 : 0);
       const finalScore = answers.filter(a => a.correct).length;
       setDone(true);
       onComplete?.(finalScore, questions.length);

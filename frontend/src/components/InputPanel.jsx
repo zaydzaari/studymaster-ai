@@ -53,7 +53,7 @@ export default function InputPanel({
     } else {
       await onSubmitURL(urlValue, outputLang);
     }
-  }, [streaming, activeTab, inputText, pdfFile, urlValue, outputLang, onSubmitText, onSubmitPDF, onSubmitURL]);
+  }, [streaming, activeTab, inputText, pdfText, urlValue, outputLang, onSubmitText, onSubmitURL]);
 
   const tabLabel = [t("input.tabs.text"), t("input.tabs.pdf"), t("input.tabs.url")];
 

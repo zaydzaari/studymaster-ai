@@ -149,14 +149,14 @@ export default function SummaryView({ result, lang, addToast }) {
                   gap: 4,
                 }}
                 onMouseEnter={e => {
-                  e.target.style.background = "var(--accent-light)";
-                  e.target.style.color = "var(--accent)";
-                  e.target.style.borderColor = "rgba(37,99,235,0.3)";
+                  e.currentTarget.style.background = "var(--accent-light)";
+                  e.currentTarget.style.color = "var(--accent)";
+                  e.currentTarget.style.borderColor = "rgba(37,99,235,0.3)";
                 }}
                 onMouseLeave={e => {
-                  e.target.style.background = "var(--bg-secondary)";
-                  e.target.style.color = "var(--text-secondary)";
-                  e.target.style.borderColor = "var(--border)";
+                  e.currentTarget.style.background = "var(--bg-secondary)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                  e.currentTarget.style.borderColor = "var(--border)";
                 }}
               >
                 {c}
