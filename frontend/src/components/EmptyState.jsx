@@ -92,14 +92,14 @@ export default function EmptyState({ onDemo }) {
 
       {/* Demo button */}
       <motion.button
-        whileHover={{ scale: 1.02, translateY: -1 }}
+        whileHover={{ borderColor: "#2563EB", background: "var(--accent-light)", translateY: -1 }}
         whileTap={{ scale: 0.97 }}
         onClick={onDemo}
         style={{
           padding: "12px 28px",
-          background: "var(--accent)",
-          color: "white",
-          border: "none",
+          background: "var(--bg-card)",
+          color: "var(--text-primary)",
+          border: "1px solid var(--border)",
           borderRadius: 8,
           fontSize: 14,
           fontWeight: 500,
@@ -107,6 +107,8 @@ export default function EmptyState({ onDemo }) {
           display: "flex",
           alignItems: "center",
           gap: 8,
+          transition: "all 0.2s",
+          boxShadow: "var(--shadow-sm)",
         }}
       >
         ✨ {t("empty.demo")}

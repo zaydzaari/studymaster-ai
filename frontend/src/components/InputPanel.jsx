@@ -80,7 +80,7 @@ export default function InputPanel({
   };
 
   return (
-    <div style={panelStyle}>
+    <div data-demo-id="input-panel" style={panelStyle}>
       {/* Mobile collapse toggle */}
       {isMobile && (
         <button
@@ -235,6 +235,7 @@ export default function InputPanel({
             {/* Submit */}
             <div style={{ marginTop: 12, paddingBottom: isMobile ? 12 : 0 }}>
               <button
+                data-demo-id="submit-btn"
                 ref={submitRef}
                 onClick={handleSubmit}
                 disabled={isDisabled}

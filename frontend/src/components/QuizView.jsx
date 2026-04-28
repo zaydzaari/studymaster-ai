@@ -4,20 +4,33 @@ import { useTranslation } from "react-i18next";
 import ReactConfetti from "react-confetti";
 import { useKeyboard } from "../hooks/useKeyboard.js";
 
-export default function QuizView({ result, onComplete, addToast }) {
+export default function QuizView({ result, onComplete, addToast, demoControl }) {
   const { t } = useTranslation();
   const questions = result.quiz || [];
-  const [qIndex, setQIndex] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [submitted, setSubmitted] = useState(false);
-  const [answers, setAnswers] = useState([]);
-  const [done, setDone] = useState(false);
+  const [localQIndex, setLocalQIndex] = useState(0);
+  const [localSelected, setLocalSelected] = useState(null);
+  const [localSubmitted, setLocalSubmitted] = useState(false);
+  const [localAnswers, setLocalAnswers] = useState([]);
+  const [localDone, setLocalDone] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
   const [eliminated, setEliminated] = useState([]);
   const [timePressure, setTimePressure] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
   const [timerActive, setTimerActive] = useState(false);
+
+  // When demoControl.quiz is set, use external state
+  const dc = demoControl?.quiz;
+  const qIndex    = dc ? dc.qIndex    : localQIndex;
+  const selected  = dc ? dc.selected  : localSelected;
+  const submitted = dc ? dc.submitted : localSubmitted;
+  const answers   = dc ? dc.answers   : localAnswers;
+  const done      = dc ? dc.done      : localDone;
+  const setQIndex    = dc ? () => {} : setLocalQIndex;
+  const setSelected  = dc ? () => {} : setLocalSelected;
+  const setSubmitted = dc ? () => {} : setLocalSubmitted;
+  const setAnswers   = dc ? () => {} : setLocalAnswers;
+  const setDone      = dc ? () => {} : setLocalDone;
 
   const q = questions[qIndex];
 

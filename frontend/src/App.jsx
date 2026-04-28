@@ -11,6 +11,7 @@ import KeyboardShortcuts from "./components/KeyboardShortcuts.jsx";
 import HamburgerMenu from "./components/HamburgerMenu.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import Toast from "./components/Toast.jsx";
+import DemoRunner from "./components/DemoRunner.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 import { useLanguage } from "./hooks/useLanguage.js";
 import { useStats } from "./hooks/useStats.js";
@@ -20,8 +21,6 @@ import { useStreaming } from "./hooks/useStreaming.js";
 import { useKeyboard } from "./hooks/useKeyboard.js";
 import { useIsMobile } from "./hooks/useIsMobile.js";
 import { getSummarizeTextUrl, getSummarizePDFUrl, getSummarizeURLUrl } from "./utils/api.js";
-
-const DEMO_TEXT = `Machine learning is a transformative subset of artificial intelligence that enables computers to learn from experience without being explicitly programmed. At its core, ML uses algorithms and statistical models to identify patterns in data, allowing systems to make intelligent decisions. The three main paradigms are supervised learning, unsupervised learning, and reinforcement learning. Key concepts include neural networks, gradient descent, overfitting, and model evaluation metrics such as precision, recall, and F1 score.`;
 
 // Map bottom nav tab index → results panel tab index
 const BOTTOM_TO_RESULTS = { 0: 0, 1: 3, 2: 4, 3: 5 };
@@ -45,6 +44,15 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const submitRef = useRef(null);
+
+  // ── Demo mode state ───────────────────────────────────────────────
+  const [demoActive, setDemoActive] = useState(false);
+  const [demoKey, setDemoKey] = useState(0); // increment to force remount
+  const [demoResult, setDemoResult] = useState(null);
+  const [demoStreaming, setDemoStreaming] = useState(false);
+  const [demoStreamingSummary, setDemoStreamingSummary] = useState(null);
+  const [demoFlashcard, setDemoFlashcard] = useState(null);
+  const [demoQuiz, setDemoQuiz] = useState(null);
 
   // Header height varies by breakpoint
   const headerHeight = isMobile ? 48 : isTablet ? 56 : 60;
@@ -90,13 +98,34 @@ export default function App() {
     });
   }, [streaming, stream, addEntry, recordUsage, increment]);
 
+  const resetDemoState = useCallback(() => {
+    setDemoActive(false);
+    setDemoResult(null);
+    setDemoStreaming(false);
+    setDemoStreamingSummary(null);
+    setDemoFlashcard(null);
+    setDemoQuiz(null);
+    setInputText("");
+    setActiveTab(0);
+  }, []);
+
   const handleDemo = useCallback(() => {
-    setInputText(DEMO_TEXT);
-    setInputType("text");
+    resetDemoState();
+    setDemoKey(k => k + 1);
+    setDemoActive(true);
+  }, [resetDemoState]);
+
+  const handleDemoStop = useCallback(() => {
+    resetDemoState();
+  }, [resetDemoState]);
+
+  const handleDemoRestart = useCallback(() => {
+    resetDemoState();
     setTimeout(() => {
-      handleSubmitText(DEMO_TEXT, lang);
-    }, 100);
-  }, [handleSubmitText, lang]);
+      setDemoKey(k => k + 1);
+      setDemoActive(true);
+    }, 80);
+  }, [resetDemoState]);
 
   const handleQuizComplete = useCallback((score, total) => {
     increment("quizzes");
@@ -155,12 +184,28 @@ export default function App() {
     lang, submitRef,
   };
 
+  // In demo mode, override display state with demo-controlled values
+  const displayResult   = demoActive ? demoResult   : result;
+  const displayStreaming = demoActive ? demoStreaming : streaming;
+  const displayStreamText = demoActive ? "" : streamText;
+  const displayError    = demoActive ? null         : error;
+  const demoControl     = demoActive ? {
+    flashcard: demoFlashcard,
+    quiz: demoQuiz,
+    streamingSummary: demoStreamingSummary,
+  } : null;
+
   const resultsPanelProps = {
-    result, streamText, streaming, error, lang,
+    result: displayResult,
+    streamText: displayStreamText,
+    streaming: displayStreaming,
+    error: displayError,
+    lang,
     activeTab, setActiveTab,
     onQuizComplete: handleQuizComplete,
     onFlashcardsViewed: handleFlashcardsViewed,
     addToast,
+    demoControl,
   };
 
   return (
@@ -201,7 +246,7 @@ export default function App() {
             minHeight: 200,
           }}>
             <AnimatePresence mode="wait">
-              {!result && !streaming && !streamText ? (
+              {!displayResult && !displayStreaming && !displayStreamText && !demoActive ? (
                 <EmptyState key="empty" onDemo={handleDemo} />
               ) : (
                 <ResultsPanel key="results" {...resultsPanelProps} />
@@ -244,7 +289,7 @@ export default function App() {
             minHeight: "calc(100vh - 160px)",
           }}>
             <AnimatePresence mode="wait">
-              {!result && !streaming && !streamText ? (
+              {!displayResult && !displayStreaming && !displayStreamText && !demoActive ? (
                 <EmptyState key="empty" onDemo={handleDemo} />
               ) : (
                 <ResultsPanel key="results" {...resultsPanelProps} />
@@ -259,16 +304,16 @@ export default function App() {
         <BottomNav
           activeTab={displayedBottomTab}
           onTabChange={handleBottomTabChange}
-          hasResult={!!result}
+          hasResult={!!displayResult}
         />
       )}
 
       {/* Toasts */}
       <div style={{
         position: "fixed",
-        bottom: isMobile ? "calc(64px + env(safe-area-inset-bottom, 0px))" : 24,
+        bottom: demoActive ? 72 : (isMobile ? "calc(64px + env(safe-area-inset-bottom, 0px))" : 24),
         right: 24,
-        zIndex: 1000,
+        zIndex: 10002,
         display: "flex",
         flexDirection: "column",
         gap: 8,
@@ -307,6 +352,24 @@ export default function App() {
           }} />
         )}
       </AnimatePresence>
+
+      {/* Cinematic demo runner */}
+      {demoActive && (
+        <DemoRunner
+          key={demoKey}
+          onSetInputText={setInputText}
+          onSetResult={setDemoResult}
+          onSetStreaming={setDemoStreaming}
+          onSetStreamingSummary={setDemoStreamingSummary}
+          onSetActiveTab={setActiveTab}
+          onSetFlashcard={setDemoFlashcard}
+          onSetQuiz={setDemoQuiz}
+          onToggleTheme={toggleTheme}
+          onStop={handleDemoStop}
+          onRestart={handleDemoRestart}
+          addToast={addToast}
+        />
+      )}
     </div>
   );
 }

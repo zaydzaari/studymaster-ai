@@ -24,6 +24,7 @@ export default function ResultsPanel({
   result, streamText, streaming, error,
   lang, activeTab, setActiveTab,
   onQuizComplete, onFlashcardsViewed, addToast,
+  demoControl,
 }) {
   const { t } = useTranslation();
   const [showDeepDive, setShowDeepDive] = useState(false);
@@ -114,6 +115,7 @@ export default function ResultsPanel({
 
       {/* Tabs */}
       <div
+        data-demo-id="tabs-row"
         className="tabs-scroll"
         style={{
           display: "flex",
@@ -178,9 +180,11 @@ export default function ResultsPanel({
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            {activeTab === 0 && (
+            {activeTab === 0 && demoControl?.streamingSummary != null ? (
+              <DemoStreamingView text={demoControl.streamingSummary} />
+            ) : activeTab === 0 ? (
               <SummaryView result={result} lang={lang} addToast={addToast} />
-            )}
+            ) : null}
             {activeTab === 1 && (
               <KeyPointsView result={result} addToast={addToast} />
             )}
@@ -195,6 +199,7 @@ export default function ResultsPanel({
                 result={result}
                 onViewed={onFlashcardsViewed}
                 addToast={addToast}
+                demoControl={demoControl}
               />
             )}
             {activeTab === 5 && (
@@ -202,6 +207,7 @@ export default function ResultsPanel({
                 result={result}
                 onComplete={onQuizComplete}
                 addToast={addToast}
+                demoControl={demoControl}
               />
             )}
           </motion.div>
@@ -320,6 +326,26 @@ function ObjectivesView({ result }) {
             </span>
           </motion.div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function DemoStreamingView({ text }) {
+  return (
+    <div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>
+        📚 Summary
+      </div>
+      <div style={{
+        fontSize: 14,
+        lineHeight: 1.8,
+        color: "var(--text-primary)",
+        whiteSpace: "pre-wrap",
+        minHeight: 120,
+      }}>
+        {text}
+        <span className="cursor" />
       </div>
     </div>
   );

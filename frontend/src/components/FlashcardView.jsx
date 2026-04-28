@@ -3,14 +3,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useKeyboard } from "../hooks/useKeyboard.js";
 
-export default function FlashcardView({ result, onViewed, addToast }) {
+export default function FlashcardView({ result, onViewed, addToast, demoControl }) {
   const { t } = useTranslation();
   const cards = result.flashcards || [];
-  const [index, setIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [ratings, setRatings] = useState({});
+  const [localIndex, setLocalIndex] = useState(0);
+  const [localFlipped, setLocalFlipped] = useState(false);
+  const [localRatings, setLocalRatings] = useState({});
   const [viewed, setViewed] = useState(false);
   const [touchStartX, setTouchStartX] = useState(null);
+
+  // When demoControl.flashcard is set, use external state; otherwise use local
+  const dc = demoControl?.flashcard;
+  const index   = dc ? dc.index   : localIndex;
+  const flipped  = dc ? dc.flipped  : localFlipped;
+  const ratings  = dc ? dc.ratings  : localRatings;
+  const setIndex  = dc ? () => {} : setLocalIndex;
+  const setFlipped = dc ? () => {} : setLocalFlipped;
+  const setRatings = dc ? () => {} : setLocalRatings;
 
   useEffect(() => {
     if (!viewed && cards.length > 0) {
