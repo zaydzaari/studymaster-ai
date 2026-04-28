@@ -1,0 +1,127 @@
+{
+  "app": {
+    "name": "StudyMaster AI",
+    "tagline": "Turn any content into a study package"
+  },
+  "input": {
+    "placeholder": "Paste your course content here — lecture notes, textbook excerpts, articles...",
+    "urlPlaceholder": "https://example.com/article",
+    "submit": "Generate Study Package",
+    "submitting": "Analyzing...",
+    "tabs": {
+      "text": "Text",
+      "pdf": "PDF Upload",
+      "url": "URL"
+    },
+    "history": "Recent",
+    "qualityShort": "Content might be too short for a good summary",
+    "qualityLong": "Content too long — we'll use the first 50,000 characters",
+    "readingTime": "{{min}} min read",
+    "detected": "Detected: {{lang}}"
+  },
+  "results": {
+    "tabs": {
+      "summary": "Summary",
+      "keyPoints": "Key Points",
+      "objectives": "Objectives",
+      "questions": "Questions",
+      "flashcards": "Flashcards",
+      "quiz": "Quiz"
+    },
+    "summary": "Summary",
+    "keyPoints": "Key Points",
+    "objectives": "Learning Objectives",
+    "questions": "Study Questions",
+    "flashcards": "Flashcards",
+    "quiz": "Quiz",
+    "keyQuote": "Key Quote",
+    "concepts": "Concepts"
+  },
+  "flashcard": {
+    "front": "Click to flip",
+    "back": "Click to flip back",
+    "hard": "Hard",
+    "okay": "Okay",
+    "easy": "Easy",
+    "progress": "{{done}}/{{total}} mastered",
+    "studyAgain": "Study Hard cards again",
+    "summary": "{{hard}} Hard · {{okay}} Okay · {{easy}} Easy"
+  },
+  "quiz": {
+    "question": "Question {{n}} of {{total}}",
+    "submit": "Submit Answer",
+    "next": "Next Question",
+    "finish": "Finish Quiz",
+    "hint": "Use hint",
+    "hintUsed": "Hint used",
+    "score": "{{score}}/{{total}}",
+    "perfect": "Perfect score! You've mastered this content.",
+    "reviewMistakes": "Review Mistakes",
+    "shareResult": "Share Result",
+    "timePressure": "Time pressure",
+    "timeUp": "Time's up!"
+  },
+  "actions": {
+    "copy": "Copy",
+    "copied": "Copied!",
+    "exportPdf": "Export PDF",
+    "listen": "Listen",
+    "stop": "Stop",
+    "explainMore": "Explain more",
+    "close": "Close"
+  },
+  "pomodoro": {
+    "focus": "Focus",
+    "break": "Break time! 5 minutes.",
+    "skipBreak": "Skip break",
+    "longBreak": "Long break — you've earned it!"
+  },
+  "streak": {
+    "days": "{{n}} day streak"
+  },
+  "stats": {
+    "summaries": "summaries generated",
+    "flashcards": "flashcards created",
+    "quizzes": "quizzes taken"
+  },
+  "empty": {
+    "heading": "Turn any content into a study package",
+    "subtitle": "Paste text, upload a PDF, or drop a URL — get summaries, flashcards and quizzes in seconds.",
+    "demo": "See a live demo"
+  },
+  "onboarding": {
+    "step1": "Paste any course content here",
+    "step2": "Click to generate your study package",
+    "step3": "Get summaries, flashcards and quizzes instantly",
+    "next": "Next",
+    "skip": "Skip",
+    "done": "Done"
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "submit": "Submit",
+    "escape": "Close / Back",
+    "open": "Open shortcuts",
+    "prevCard": "Previous card",
+    "nextCard": "Next card",
+    "flip": "Flip card",
+    "exportPdf": "Export PDF",
+    "listen": "Listen (TTS)",
+    "switchTab": "Switch tab"
+  },
+  "difficulty": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  },
+  "error": {
+    "tooShort": "Content is too short. Please provide more text.",
+    "failed": "Processing failed. Please try again.",
+    "pdfOnly": "Only PDF files accepted",
+    "pdfSize": "File too large (max 50MB)",
+    "urlFailed": "Failed to fetch URL content. Please try again."
+  }
+}

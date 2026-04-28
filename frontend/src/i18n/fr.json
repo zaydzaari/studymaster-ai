@@ -1,0 +1,127 @@
+{
+  "app": {
+    "name": "StudyMaster AI",
+    "tagline": "Transformez n'importe quel contenu en package d'étude"
+  },
+  "input": {
+    "placeholder": "Collez votre contenu de cours ici — notes de cours, extraits de manuel, articles...",
+    "urlPlaceholder": "https://exemple.com/article",
+    "submit": "Générer le package d'étude",
+    "submitting": "Analyse en cours...",
+    "tabs": {
+      "text": "Texte",
+      "pdf": "PDF",
+      "url": "URL"
+    },
+    "history": "Récents",
+    "qualityShort": "Le contenu est peut-être trop court pour un bon résumé",
+    "qualityLong": "Contenu trop long — nous utiliserons les 50 000 premiers caractères",
+    "readingTime": "{{min}} min de lecture",
+    "detected": "Détecté: {{lang}}"
+  },
+  "results": {
+    "tabs": {
+      "summary": "Résumé",
+      "keyPoints": "Points clés",
+      "objectives": "Objectifs",
+      "questions": "Questions",
+      "flashcards": "Fiches",
+      "quiz": "Quiz"
+    },
+    "summary": "Résumé",
+    "keyPoints": "Points clés",
+    "objectives": "Objectifs d'apprentissage",
+    "questions": "Questions d'étude",
+    "flashcards": "Fiches mémoire",
+    "quiz": "Quiz",
+    "keyQuote": "Citation clé",
+    "concepts": "Concepts"
+  },
+  "flashcard": {
+    "front": "Cliquez pour retourner",
+    "back": "Cliquez pour retourner",
+    "hard": "Difficile",
+    "okay": "Moyen",
+    "easy": "Facile",
+    "progress": "{{done}}/{{total}} maîtrisés",
+    "studyAgain": "Revoir les cartes difficiles",
+    "summary": "{{hard}} Difficile · {{okay}} Moyen · {{easy}} Facile"
+  },
+  "quiz": {
+    "question": "Question {{n}} sur {{total}}",
+    "submit": "Valider",
+    "next": "Question suivante",
+    "finish": "Terminer le quiz",
+    "hint": "Indice",
+    "hintUsed": "Indice utilisé",
+    "score": "{{score}}/{{total}}",
+    "perfect": "Score parfait ! Vous maîtrisez ce contenu.",
+    "reviewMistakes": "Revoir les erreurs",
+    "shareResult": "Partager",
+    "timePressure": "Mode chrono",
+    "timeUp": "Temps écoulé !"
+  },
+  "actions": {
+    "copy": "Copier",
+    "copied": "Copié !",
+    "exportPdf": "Exporter PDF",
+    "listen": "Écouter",
+    "stop": "Arrêter",
+    "explainMore": "En savoir plus",
+    "close": "Fermer"
+  },
+  "pomodoro": {
+    "focus": "Focus",
+    "break": "Pause ! 5 minutes.",
+    "skipBreak": "Passer la pause",
+    "longBreak": "Grande pause — vous l'avez méritée !"
+  },
+  "streak": {
+    "days": "{{n}} jours de suite"
+  },
+  "stats": {
+    "summaries": "résumés générés",
+    "flashcards": "fiches créées",
+    "quizzes": "quiz effectués"
+  },
+  "empty": {
+    "heading": "Transformez n'importe quel contenu en package d'étude",
+    "subtitle": "Collez du texte, uploadez un PDF ou entrez une URL — obtenez résumés, fiches et quiz en quelques secondes.",
+    "demo": "Voir une démo"
+  },
+  "onboarding": {
+    "step1": "Collez votre contenu de cours ici",
+    "step2": "Cliquez pour générer votre package",
+    "step3": "Obtenez résumés, fiches et quiz instantanément",
+    "next": "Suivant",
+    "skip": "Passer",
+    "done": "Terminé"
+  },
+  "shortcuts": {
+    "title": "Raccourcis clavier",
+    "submit": "Soumettre",
+    "escape": "Fermer",
+    "open": "Ouvrir les raccourcis",
+    "prevCard": "Carte précédente",
+    "nextCard": "Carte suivante",
+    "flip": "Retourner la carte",
+    "exportPdf": "Exporter PDF",
+    "listen": "Écouter",
+    "switchTab": "Changer d'onglet"
+  },
+  "difficulty": {
+    "easy": "Facile",
+    "medium": "Moyen",
+    "hard": "Difficile",
+    "beginner": "Débutant",
+    "intermediate": "Intermédiaire",
+    "advanced": "Avancé"
+  },
+  "error": {
+    "tooShort": "Contenu trop court. Veuillez fournir plus de texte.",
+    "failed": "Échec du traitement. Veuillez réessayer.",
+    "pdfOnly": "Seuls les fichiers PDF sont acceptés",
+    "pdfSize": "Fichier trop volumineux (max 50Mo)",
+    "urlFailed": "Impossible de récupérer le contenu. Veuillez réessayer."
+  }
+}

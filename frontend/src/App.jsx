@@ -1,0 +1,233 @@
+import React, { useState, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import Header from "./components/Header.jsx";
+import StatsBar from "./components/StatsBar.jsx";
+import InputPanel from "./components/InputPanel.jsx";
+import ResultsPanel from "./components/ResultsPanel.jsx";
+import EmptyState from "./components/EmptyState.jsx";
+import OnboardingTour from "./components/OnboardingTour.jsx";
+import KeyboardShortcuts from "./components/KeyboardShortcuts.jsx";
+import Toast from "./components/Toast.jsx";
+import { useTheme } from "./hooks/useTheme.js";
+import { useLanguage } from "./hooks/useLanguage.js";
+import { useStats } from "./hooks/useStats.js";
+import { useStreak } from "./hooks/useStreak.js";
+import { useHistory } from "./hooks/useHistory.js";
+import { useStreaming } from "./hooks/useStreaming.js";
+import { useKeyboard } from "./hooks/useKeyboard.js";
+import { getSummarizeTextUrl, getSummarizePDFUrl, getSummarizeURLUrl } from "./utils/api.js";
+
+const DEMO_TEXT = `Machine learning is a transformative subset of artificial intelligence that enables computers to learn from experience without being explicitly programmed. At its core, ML uses algorithms and statistical models to identify patterns in data, allowing systems to make intelligent decisions. The three main paradigms are supervised learning, unsupervised learning, and reinforcement learning. Key concepts include neural networks, gradient descent, overfitting, and model evaluation metrics such as precision, recall, and F1 score.`;
+
+export default function App() {
+  const { t } = useTranslation();
+  const { theme, toggle: toggleTheme } = useTheme();
+  const { lang, changeLanguage } = useLanguage();
+  const { stats, increment } = useStats();
+  const { streak, recordUsage } = useStreak();
+  const { history, addEntry, removeEntry } = useHistory();
+  const { stream, streamText, streaming, result, error, abort } = useStreaming();
+
+  const [inputText, setInputText] = useState("");
+  const [inputType, setInputType] = useState("text");
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showTour, setShowTour] = useState(() => !localStorage.getItem("sm-tour-done"));
+  const [toasts, setToasts] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const submitRef = useRef(null);
+
+  const addToast = useCallback((message, type = "info") => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+  }, []);
+
+  const handleSubmitText = useCallback(async (content, outputLang) => {
+    if (!content.trim() || streaming) return;
+    addEntry(content, "text");
+    recordUsage();
+    increment("summaries");
+    await stream(getSummarizeTextUrl(), {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content, language: outputLang }),
+    });
+  }, [streaming, stream, addEntry, recordUsage, increment]);
+
+  const handleSubmitPDF = useCallback(async (file, outputLang) => {
+    if (!file || streaming) return;
+    addEntry(file.name, "pdf");
+    recordUsage();
+    increment("summaries");
+    const form = new FormData();
+    form.append("pdf", file);
+    if (outputLang) form.append("language", outputLang);
+    await stream(getSummarizePDFUrl(), { body: form });
+  }, [streaming, stream, addEntry, recordUsage, increment]);
+
+  const handleSubmitURL = useCallback(async (url, outputLang) => {
+    if (!url.trim() || streaming) return;
+    addEntry(url, "url");
+    recordUsage();
+    increment("summaries");
+    await stream(getSummarizeURLUrl(), {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, language: outputLang }),
+    });
+  }, [streaming, stream, addEntry, recordUsage, increment]);
+
+  const handleDemo = useCallback(() => {
+    setInputText(DEMO_TEXT);
+    setInputType("text");
+    setTimeout(() => {
+      handleSubmitText(DEMO_TEXT, lang);
+    }, 100);
+  }, [handleSubmitText, lang]);
+
+  const handleQuizComplete = useCallback((score, total) => {
+    increment("quizzes");
+    if (score === total) {
+      addToast(t("quiz.perfect"), "success");
+    }
+  }, [increment, addToast, t]);
+
+  const handleFlashcardsViewed = useCallback(() => {
+    increment("flashcards", 6);
+  }, [increment]);
+
+  useKeyboard([
+    {
+      key: "?",
+      action: () => setShowShortcuts(true),
+      allowTyping: false,
+    },
+    {
+      key: "Escape",
+      action: () => setShowShortcuts(false),
+      allowTyping: true,
+    },
+    {
+      key: "Enter",
+      ctrl: true,
+      action: () => submitRef.current?.click(),
+      allowTyping: true,
+    },
+    ...([0,1,2,3,4,5].map(i => ({
+      key: String(i + 1),
+      action: () => result && setActiveTab(i),
+      allowTyping: false,
+    }))),
+  ]);
+
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <Header
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        lang={lang}
+        onChangeLang={changeLanguage}
+        streak={streak}
+      />
+      <StatsBar stats={stats} />
+
+      <main style={{
+        maxWidth: 1280,
+        margin: "0 auto",
+        padding: "24px",
+        marginTop: 108,
+        display: "flex",
+        gap: 24,
+        alignItems: "flex-start",
+      }}>
+        {/* Left panel */}
+        <div style={{
+          width: "40%",
+          minWidth: 320,
+          position: "sticky",
+          top: 120,
+          flexShrink: 0,
+        }}>
+          <InputPanel
+            inputText={inputText}
+            setInputText={setInputText}
+            inputType={inputType}
+            setInputType={setInputType}
+            onSubmitText={handleSubmitText}
+            onSubmitPDF={handleSubmitPDF}
+            onSubmitURL={handleSubmitURL}
+            streaming={streaming}
+            history={history}
+            onRemoveHistory={removeEntry}
+            lang={lang}
+            submitRef={submitRef}
+          />
+        </div>
+
+        {/* Right panel */}
+        <div style={{
+          flex: 1,
+          minWidth: 0,
+          background: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: 12,
+          padding: 24,
+          minHeight: "calc(100vh - 160px)",
+        }}>
+          <AnimatePresence mode="wait">
+            {!result && !streaming && !streamText ? (
+              <EmptyState key="empty" onDemo={handleDemo} />
+            ) : (
+              <ResultsPanel
+                key="results"
+                result={result}
+                streamText={streamText}
+                streaming={streaming}
+                error={error}
+                lang={lang}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                onQuizComplete={handleQuizComplete}
+                onFlashcardsViewed={handleFlashcardsViewed}
+                addToast={addToast}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+      </main>
+
+      {/* Toasts */}
+      <div style={{
+        position: "fixed",
+        bottom: 24,
+        right: 24,
+        zIndex: 1000,
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+      }}>
+        <AnimatePresence>
+          {toasts.map(toast => (
+            <Toast key={toast.id} message={toast.message} type={toast.type} />
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Keyboard shortcuts modal */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <KeyboardShortcuts onClose={() => setShowShortcuts(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Onboarding tour */}
+      <AnimatePresence>
+        {showTour && (
+          <OnboardingTour onDone={() => {
+            setShowTour(false);
+            localStorage.setItem("sm-tour-done", "1");
+          }} />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
