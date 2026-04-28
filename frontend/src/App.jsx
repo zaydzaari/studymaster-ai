@@ -8,6 +8,8 @@ import ResultsPanel from "./components/ResultsPanel.jsx";
 import EmptyState from "./components/EmptyState.jsx";
 import OnboardingTour from "./components/OnboardingTour.jsx";
 import KeyboardShortcuts from "./components/KeyboardShortcuts.jsx";
+import HamburgerMenu from "./components/HamburgerMenu.jsx";
+import BottomNav from "./components/BottomNav.jsx";
 import Toast from "./components/Toast.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 import { useLanguage } from "./hooks/useLanguage.js";
@@ -16,9 +18,14 @@ import { useStreak } from "./hooks/useStreak.js";
 import { useHistory } from "./hooks/useHistory.js";
 import { useStreaming } from "./hooks/useStreaming.js";
 import { useKeyboard } from "./hooks/useKeyboard.js";
+import { useIsMobile } from "./hooks/useIsMobile.js";
 import { getSummarizeTextUrl, getSummarizePDFUrl, getSummarizeURLUrl } from "./utils/api.js";
 
 const DEMO_TEXT = `Machine learning is a transformative subset of artificial intelligence that enables computers to learn from experience without being explicitly programmed. At its core, ML uses algorithms and statistical models to identify patterns in data, allowing systems to make intelligent decisions. The three main paradigms are supervised learning, unsupervised learning, and reinforcement learning. Key concepts include neural networks, gradient descent, overfitting, and model evaluation metrics such as precision, recall, and F1 score.`;
+
+// Map bottom nav tab index → results panel tab index
+const BOTTOM_TO_RESULTS = { 0: 0, 1: 3, 2: 4, 3: 5 };
+const RESULTS_TO_BOTTOM = { 0: 0, 1: -1, 2: -1, 3: 1, 4: 2, 5: 3 };
 
 export default function App() {
   const { t } = useTranslation();
@@ -28,6 +35,7 @@ export default function App() {
   const { streak, recordUsage } = useStreak();
   const { history, addEntry, removeEntry } = useHistory();
   const { stream, streamText, streaming, result, error, abort } = useStreaming();
+  const { isMobile, isTablet, isDesktop } = useIsMobile();
 
   const [inputText, setInputText] = useState("");
   const [inputType, setInputType] = useState("text");
@@ -35,7 +43,13 @@ export default function App() {
   const [showTour, setShowTour] = useState(() => !localStorage.getItem("sm-tour-done"));
   const [toasts, setToasts] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const submitRef = useRef(null);
+
+  // Header height varies by breakpoint
+  const headerHeight = isMobile ? 48 : isTablet ? 56 : 60;
+  // On desktop, stats bar adds 48px
+  const topOffset = isDesktop ? headerHeight + 48 : headerHeight;
 
   const addToast = useCallback((message, type = "info") => {
     const id = Date.now();
@@ -95,6 +109,17 @@ export default function App() {
     increment("flashcards", 6);
   }, [increment]);
 
+  // Bottom nav tab change: map bottom index → results panel index
+  const handleBottomTabChange = useCallback((bottomIdx) => {
+    const resultsIdx = BOTTOM_TO_RESULTS[bottomIdx] ?? 0;
+    setActiveTab(resultsIdx);
+  }, []);
+
+  // Which bottom nav tab is active
+  const activeBottomTab = RESULTS_TO_BOTTOM[activeTab] ?? -1;
+  // Find the closest bottom nav tab index
+  const displayedBottomTab = activeBottomTab >= 0 ? activeBottomTab : 0;
+
   useKeyboard([
     {
       key: "?",
@@ -103,7 +128,7 @@ export default function App() {
     },
     {
       key: "Escape",
-      action: () => setShowShortcuts(false),
+      action: () => { setShowShortcuts(false); setMenuOpen(false); },
       allowTyping: true,
     },
     {
@@ -112,12 +137,31 @@ export default function App() {
       action: () => submitRef.current?.click(),
       allowTyping: true,
     },
-    ...([0,1,2,3,4,5].map(i => ({
+    ...([0, 1, 2, 3, 4, 5].map(i => ({
       key: String(i + 1),
       action: () => result && setActiveTab(i),
       allowTyping: false,
     }))),
   ]);
+
+  const inputPanelProps = {
+    inputText, setInputText,
+    inputType, setInputType,
+    onSubmitText: handleSubmitText,
+    onSubmitPDF: handleSubmitPDF,
+    onSubmitURL: handleSubmitURL,
+    streaming, history,
+    onRemoveHistory: removeEntry,
+    lang, submitRef,
+  };
+
+  const resultsPanelProps = {
+    result, streamText, streaming, error, lang,
+    activeTab, setActiveTab,
+    onQuizComplete: handleQuizComplete,
+    onFlashcardsViewed: handleFlashcardsViewed,
+    addToast,
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
@@ -127,78 +171,102 @@ export default function App() {
         lang={lang}
         onChangeLang={changeLanguage}
         streak={streak}
+        onOpenMenu={() => setMenuOpen(true)}
       />
+
+      {/* Stats bar — desktop/tablet only (hidden on mobile via CSS) */}
       <StatsBar stats={stats} />
 
-      <main style={{
-        maxWidth: 1280,
-        margin: "0 auto",
-        padding: "24px",
-        marginTop: 108,
-        display: "flex",
-        gap: 24,
-        alignItems: "flex-start",
-      }}>
-        {/* Left panel */}
+      {/* ── MOBILE LAYOUT ── */}
+      {(isMobile || isTablet) && (
         <div style={{
-          width: "40%",
-          minWidth: 320,
-          position: "sticky",
-          top: 120,
-          flexShrink: 0,
+          paddingTop: headerHeight,
+          paddingBottom: isMobile ? "calc(56px + env(safe-area-inset-bottom, 0px))" : 0,
+          minHeight: "100vh",
         }}>
-          <InputPanel
-            inputText={inputText}
-            setInputText={setInputText}
-            inputType={inputType}
-            setInputType={setInputType}
-            onSubmitText={handleSubmitText}
-            onSubmitPDF={handleSubmitPDF}
-            onSubmitURL={handleSubmitURL}
-            streaming={streaming}
-            history={history}
-            onRemoveHistory={removeEntry}
-            lang={lang}
-            submitRef={submitRef}
-          />
-        </div>
+          {/* Sticky input panel */}
+          <div style={{
+            position: "sticky",
+            top: headerHeight,
+            zIndex: 50,
+            background: "var(--bg-secondary)",
+            borderBottom: "1px solid var(--border)",
+          }}>
+            <InputPanel {...inputPanelProps} />
+          </div>
 
-        {/* Right panel */}
-        <div style={{
-          flex: 1,
-          minWidth: 0,
-          background: "var(--bg-card)",
-          border: "1px solid var(--border)",
-          borderRadius: 12,
-          padding: 24,
-          minHeight: "calc(100vh - 160px)",
-        }}>
-          <AnimatePresence mode="wait">
-            {!result && !streaming && !streamText ? (
-              <EmptyState key="empty" onDemo={handleDemo} />
-            ) : (
-              <ResultsPanel
-                key="results"
-                result={result}
-                streamText={streamText}
-                streaming={streaming}
-                error={error}
-                lang={lang}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                onQuizComplete={handleQuizComplete}
-                onFlashcardsViewed={handleFlashcardsViewed}
-                addToast={addToast}
-              />
-            )}
-          </AnimatePresence>
+          {/* Results */}
+          <div style={{
+            padding: isMobile ? "16px 12px" : "20px 20px",
+            minHeight: 200,
+          }}>
+            <AnimatePresence mode="wait">
+              {!result && !streaming && !streamText ? (
+                <EmptyState key="empty" onDemo={handleDemo} />
+              ) : (
+                <ResultsPanel key="results" {...resultsPanelProps} />
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-      </main>
+      )}
+
+      {/* ── DESKTOP LAYOUT ── */}
+      {isDesktop && (
+        <main style={{
+          maxWidth: 1280,
+          margin: "0 auto",
+          padding: "24px",
+          marginTop: topOffset,
+          display: "flex",
+          gap: 24,
+          alignItems: "flex-start",
+        }}>
+          {/* Left panel */}
+          <div style={{
+            width: "40%",
+            minWidth: 320,
+            position: "sticky",
+            top: topOffset + 16,
+            flexShrink: 0,
+          }}>
+            <InputPanel {...inputPanelProps} />
+          </div>
+
+          {/* Right panel */}
+          <div style={{
+            flex: 1,
+            minWidth: 0,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
+            padding: 24,
+            minHeight: "calc(100vh - 160px)",
+          }}>
+            <AnimatePresence mode="wait">
+              {!result && !streaming && !streamText ? (
+                <EmptyState key="empty" onDemo={handleDemo} />
+              ) : (
+                <ResultsPanel key="results" {...resultsPanelProps} />
+              )}
+            </AnimatePresence>
+          </div>
+        </main>
+      )}
+
+      {/* Bottom navigation — mobile only */}
+      {isMobile && (
+        <BottomNav
+          activeTab={displayedBottomTab}
+          onTabChange={handleBottomTabChange}
+          hasResult={!!result}
+        />
+      )}
 
       {/* Toasts */}
       <div style={{
         position: "fixed",
-        bottom: 24,
+        bottom: isMobile ? "calc(64px + env(safe-area-inset-bottom, 0px))" : 24,
         right: 24,
         zIndex: 1000,
         display: "flex",
@@ -218,6 +286,17 @@ export default function App() {
           <KeyboardShortcuts onClose={() => setShowShortcuts(false)} />
         )}
       </AnimatePresence>
+
+      {/* Hamburger menu — mobile & tablet */}
+      <HamburgerMenu
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        lang={lang}
+        onChangeLang={changeLanguage}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onShowShortcuts={() => setShowShortcuts(true)}
+      />
 
       {/* Onboarding tour */}
       <AnimatePresence>

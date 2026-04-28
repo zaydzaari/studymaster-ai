@@ -31,7 +31,7 @@ export default function StatsBar({ stats }) {
   ];
 
   return (
-    <div style={{
+    <div className="stats-bar" style={{
       position: "fixed",
       top: 60,
       left: 0,

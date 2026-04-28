@@ -10,6 +10,7 @@ export default function FlashcardView({ result, onViewed, addToast }) {
   const [flipped, setFlipped] = useState(false);
   const [ratings, setRatings] = useState({});
   const [viewed, setViewed] = useState(false);
+  const [touchStartX, setTouchStartX] = useState(null);
 
   useEffect(() => {
     if (!viewed && cards.length > 0) {
@@ -57,6 +58,20 @@ export default function FlashcardView({ result, onViewed, addToast }) {
     { key: "ArrowRight", action: () => go(1), allowTyping: false },
     { key: " ", action: () => setFlipped(f => !f), allowTyping: false },
   ]);
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null) return;
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 48) {
+      if (diff > 0) go(1);
+      else go(-1);
+    }
+    setTouchStartX(null);
+  };
 
   const handleCopy = async () => {
     const text = cards.map(c => `Q: ${c.front}\nA: ${c.back}`).join("\n\n");
@@ -111,6 +126,8 @@ export default function FlashcardView({ result, onViewed, addToast }) {
       <div
         className="flip-card"
         onClick={() => setFlipped(f => !f)}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         style={{
           width: "100%",
           maxWidth: 500,

@@ -191,3 +191,89 @@ body {
 [dir="rtl"] .flip-card-inner.flipped {
   transform: rotateY(-180deg);
 }
+
+/* ─── Mobile Foundation ──────────────────────────────────────── */
+
+/* Prevent double-tap zoom on buttons */
+button, a {
+  touch-action: manipulation;
+}
+
+/* Remove tap highlight flicker on iOS */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Momentum scrolling on iOS */
+.scroll-ios {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safe area helpers */
+.safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Mobile (< 640px) ───────────────────────────────────────── */
+@media (max-width: 639px) {
+  body {
+    font-size: 15px;
+  }
+
+  /* Prevent iOS auto-zoom when focusing inputs */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* Flashcard full-width on mobile */
+  .flip-card {
+    max-width: 100% !important;
+    height: 260px !important;
+    aspect-ratio: unset !important;
+  }
+
+  /* Stats bar: hide on mobile */
+  .stats-bar {
+    display: none !important;
+  }
+
+  /* Minimum 48px tap targets for quiz options */
+  .quiz-option {
+    min-height: 52px !important;
+    padding: 14px 16px !important;
+  }
+
+  /* RTL mobile: flip certain margins/paddings */
+  [dir="rtl"] .rtl-flip {
+    transform: scaleX(-1);
+  }
+}
+
+/* ─── Tablet (640px – 1023px) ─────────────────────────────────── */
+@media (min-width: 640px) and (max-width: 1023px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+/* ─── RTL Global Fixes ──────────────────────────────────────── */
+[dir="rtl"] body {
+  font-family: 'Noto Sans Arabic', 'Geist', system-ui, sans-serif;
+}
+
+[dir="rtl"] .flip-card-front,
+[dir="rtl"] .flip-card-back {
+  text-align: right;
+}
+
+/* Header in dark mode */
+[data-theme-header="dark"] {
+  background: rgba(9,9,11,0.85) !important;
+}
