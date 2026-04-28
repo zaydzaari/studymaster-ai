@@ -366,6 +366,7 @@ export default function QuizView({ result, onComplete, addToast }) {
               return (
                 <motion.button
                   key={i}
+                  className="quiz-option"
                   whileHover={!submitted && !isElim ? { scale: 1.005 } : {}}
                   onClick={() => !submitted && !isElim && setSelected(i)}
                   style={{
@@ -382,6 +383,7 @@ export default function QuizView({ result, onComplete, addToast }) {
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
+                    width: "100%",
                   }}
                 >
                   <span style={{

@@ -182,6 +182,7 @@ export default function FlashcardView({ result, onViewed, addToast }) {
             ].map(btn => (
               <motion.button
                 key={btn.key}
+                className="flashcard-confidence-btn"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={(e) => { e.stopPropagation(); rate(btn.key); }}
@@ -216,6 +217,7 @@ export default function FlashcardView({ result, onViewed, addToast }) {
       {/* Navigation */}
       <div style={{ display: "flex", justifyContent: "center", gap: 12, marginBottom: 16 }}>
         <button
+          className="flashcard-nav-btn"
           onClick={() => go(-1)}
           style={{
             padding: "8px 20px",
@@ -230,6 +232,7 @@ export default function FlashcardView({ result, onViewed, addToast }) {
           ← Prev
         </button>
         <button
+          className="flashcard-nav-btn"
           onClick={() => go(1)}
           style={{
             padding: "8px 20px",

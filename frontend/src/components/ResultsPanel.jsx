@@ -113,19 +113,25 @@ export default function ResultsPanel({
       <ProgressBar streaming={streaming} streamText={streamText} />
 
       {/* Tabs */}
-      <div style={{
-        display: "flex",
-        borderBottom: "1px solid var(--border)",
-        marginBottom: 20,
-        overflowX: "auto",
-        gap: 0,
-      }}>
+      <div
+        className="tabs-scroll"
+        style={{
+          display: "flex",
+          borderBottom: "1px solid var(--border)",
+          marginBottom: 20,
+          overflowX: "auto",
+          gap: 0,
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
+      >
         {TABS.map((tab, i) => (
           <button
             key={i}
             onClick={() => tabUnlocked[i] && setActiveTab(i)}
             style={{
-              padding: "10px 14px",
+              padding: "12px 14px",
               border: "none",
               background: "transparent",
               color: activeTab === i
@@ -142,6 +148,8 @@ export default function ResultsPanel({
               alignItems: "center",
               gap: 6,
               opacity: tabUnlocked[i] ? 1 : 0.5,
+              minHeight: 44,
+              touchAction: "manipulation",
             }}
           >
             {tab.label}

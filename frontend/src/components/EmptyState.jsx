@@ -22,9 +22,9 @@ export default function EmptyState({ onDemo }) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        minHeight: 400,
-        gap: 24,
-        padding: 40,
+        minHeight: "min(400px, 50vh)",
+        gap: 20,
+        padding: "32px 16px",
         textAlign: "center",
       }}
     >
@@ -112,8 +112,9 @@ export default function EmptyState({ onDemo }) {
         ✨ {t("empty.demo")}
       </motion.button>
 
-      {/* Arrow hint */}
+      {/* Desktop hint: panel is to the left */}
       <motion.div
+        className="empty-hint-desktop"
         animate={{ x: [-4, 4, -4] }}
         transition={{ duration: 2, repeat: Infinity }}
         style={{
@@ -124,7 +125,23 @@ export default function EmptyState({ onDemo }) {
           color: "var(--text-muted)",
         }}
       >
-        ← Paste your content in the panel
+        ← Paste your content in the panel on the left
+      </motion.div>
+
+      {/* Mobile hint: panel is above */}
+      <motion.div
+        className="empty-hint-mobile"
+        animate={{ y: [-3, 3, -3] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        style={{
+          display: "none",
+          alignItems: "center",
+          gap: 8,
+          fontSize: 13,
+          color: "var(--text-muted)",
+        }}
+      >
+        ↑ Tap the panel above to add your content
       </motion.div>
     </motion.div>
   );
