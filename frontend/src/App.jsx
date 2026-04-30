@@ -12,6 +12,7 @@ import HamburgerMenu from "./components/HamburgerMenu.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import Toast from "./components/Toast.jsx";
 import DemoRunner from "./components/DemoRunner.jsx";
+import VoiceTutor from "./components/VoiceTutor.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 import { useLanguage } from "./hooks/useLanguage.js";
 import { useStats } from "./hooks/useStats.js";
@@ -53,6 +54,13 @@ export default function App() {
   const [demoStreamingSummary, setDemoStreamingSummary] = useState(null);
   const [demoFlashcard, setDemoFlashcard] = useState(null);
   const [demoQuiz, setDemoQuiz] = useState(null);
+  const [demoLangResult, setDemoLangResult] = useState(null); // overrides result during language showcase
+  const [demoTtsActive, setDemoTtsActive] = useState(false);  // drives SummaryView listen button
+
+  // Refs so resetDemoState (empty deps) can always see fresh values
+  const preDemoLangRef = useRef("en"); // language before demo started
+  const changeLangRef = useRef(changeLanguage);
+  changeLangRef.current = changeLanguage;
 
   // Header height varies by breakpoint
   const headerHeight = isMobile ? 48 : isTablet ? 56 : 60;
@@ -99,21 +107,26 @@ export default function App() {
   }, [streaming, stream, addEntry, recordUsage, increment]);
 
   const resetDemoState = useCallback(() => {
+    changeLangRef.current(preDemoLangRef.current); // restore pre-demo language
+    window.speechSynthesis?.cancel();              // stop any demo TTS
     setDemoActive(false);
     setDemoResult(null);
     setDemoStreaming(false);
     setDemoStreamingSummary(null);
     setDemoFlashcard(null);
     setDemoQuiz(null);
+    setDemoLangResult(null);
+    setDemoTtsActive(false);
     setInputText("");
     setActiveTab(0);
   }, []);
 
   const handleDemo = useCallback(() => {
+    preDemoLangRef.current = lang; // save current language before demo touches it
     resetDemoState();
     setDemoKey(k => k + 1);
     setDemoActive(true);
-  }, [resetDemoState]);
+  }, [resetDemoState, lang]);
 
   const handleDemoStop = useCallback(() => {
     resetDemoState();
@@ -185,7 +198,8 @@ export default function App() {
   };
 
   // In demo mode, override display state with demo-controlled values
-  const displayResult   = demoActive ? demoResult   : result;
+  // demoLangResult overlays demoResult during the language showcase act
+  const displayResult   = demoActive ? (demoLangResult || demoResult) : result;
   const displayStreaming = demoActive ? demoStreaming : streaming;
   const displayStreamText = demoActive ? "" : streamText;
   const displayError    = demoActive ? null         : error;
@@ -193,6 +207,7 @@ export default function App() {
     flashcard: demoFlashcard,
     quiz: demoQuiz,
     streamingSummary: demoStreamingSummary,
+    ttsActive: demoTtsActive,
   } : null;
 
   const resultsPanelProps = {
@@ -353,6 +368,9 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* AI Voice Tutor */}
+      <VoiceTutor result={displayResult} isMobile={isMobile} />
+
       {/* Cinematic demo runner */}
       {demoActive && (
         <DemoRunner
@@ -365,6 +383,9 @@ export default function App() {
           onSetFlashcard={setDemoFlashcard}
           onSetQuiz={setDemoQuiz}
           onToggleTheme={toggleTheme}
+          onChangeLanguage={changeLanguage}
+          onSetDemoLangResult={setDemoLangResult}
+          onSetDemoTtsActive={setDemoTtsActive}
           onStop={handleDemoStop}
           onRestart={handleDemoRestart}
           addToast={addToast}

@@ -140,6 +140,29 @@ body {
   transform: rotateY(180deg);
 }
 
+/* Voice Tutor animations */
+@keyframes tutorPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(37,99,235,0.45); }
+  50%       { box-shadow: 0 4px 28px rgba(37,99,235,0.7), 0 0 0 6px rgba(37,99,235,0.12); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes soundBar1 {
+  0%, 100% { height: 6px; }
+  50%       { height: 14px; }
+}
+@keyframes soundBar2 {
+  0%, 100% { height: 10px; }
+  50%       { height: 4px; }
+}
+@keyframes soundBar3 {
+  0%, 100% { height: 6px; }
+  50%       { height: 14px; }
+}
+
 /* Audio bars animation */
 .audio-bars {
   display: flex;

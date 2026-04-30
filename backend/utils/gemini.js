@@ -1,10 +1,7 @@
-import { OpenRouter } from "@openrouter/sdk";
+import { GoogleGenAI } from '@google/genai';
 
-const openrouter = new OpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
-
-export const MODEL = "google/gemma-4-31b-it:free";
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+export const MODEL = 'gemini-3-flash-live';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -14,7 +11,7 @@ async function withRetry(fn, maxAttempts = 3) {
     try {
       return await fn();
     } catch (err) {
-      const is429 = err?.status === 429 || String(err?.message).includes("429");
+      const is429 = err?.status === 429 || String(err?.message).includes('429');
       if (!is429 || i === maxAttempts - 1) throw err;
       console.log(`Rate limited — retrying in ${delays[i] / 1000}s (attempt ${i + 1}/${maxAttempts})`);
       await sleep(delays[i]);
@@ -22,32 +19,30 @@ async function withRetry(fn, maxAttempts = 3) {
   }
 }
 
-export async function streamContent(prompt) {
-  return withRetry(() =>
-    openrouter.chat.send({
-      chatRequest: {
-        model: MODEL,
-        messages: [{ role: "user", content: prompt }],
-        stream: true,
-      },
+export async function* streamContent(prompt) {
+  const stream = await withRetry(() =>
+    ai.models.generateContentStream({
+      model: MODEL,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
   );
+  for await (const chunk of stream) {
+    const text = chunk.text || '';
+    if (text) yield text;
+  }
 }
 
 export async function generateContent(prompt) {
-  const resp = await withRetry(() =>
-    openrouter.chat.send({
-      chatRequest: {
-        model: MODEL,
-        messages: [{ role: "user", content: prompt }],
-        stream: false,
-      },
+  const result = await withRetry(() =>
+    ai.models.generateContent({
+      model: MODEL,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
   );
-  return resp.choices[0]?.message?.content || "";
+  return result.text || '';
 }
 
-export function buildMasterPrompt(content, outputLanguage = "same as input") {
+export function buildMasterPrompt(content, outputLanguage = 'same as input') {
   return `You are StudyMaster AI — an expert educational content analyzer.
 
 Analyze the content below and generate a complete study package.
@@ -144,4 +139,41 @@ Return only this JSON (no markdown, no code blocks):
   "example": "One concrete real-world example",
   "importance": "Why this concept matters in this subject (1 sentence)"
 }`;
+}
+
+export function buildVoiceTutorPrompt(studyData) {
+  if (!studyData) return 'You are a helpful study tutor.';
+  const {
+    title = '', subject = '', difficulty = '',
+    summary = '', keyPoints = [], learningObjectives = [],
+  } = studyData;
+
+  return `You are an AI study tutor for StudyMaster AI.
+You are helping a student understand their course material.
+
+The student is currently studying this content:
+
+TITLE: ${title}
+SUBJECT: ${subject}
+DIFFICULTY: ${difficulty}
+
+SUMMARY OF THE CONTENT:
+${summary}
+
+KEY POINTS:
+${keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+LEARNING OBJECTIVES:
+${learningObjectives.map((o, i) => `${i + 1}. ${o}`).join('\n')}
+
+Your personality and behavior:
+- You are warm, patient, and encouraging like a great teacher
+- You give clear, simple explanations with real examples
+- You keep each response short — maximum 30 to 45 seconds of speaking
+- You stay focused on this specific course content
+- If asked something unrelated, gently redirect back to the course material
+- You automatically match the language the student uses — Arabic, French, or English
+- You speak naturally in full sentences, never using bullet points or lists
+- You never use markdown formatting — only natural spoken language
+- You celebrate when the student understands something correctly`;
 }

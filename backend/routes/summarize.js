@@ -16,8 +16,7 @@ function sseHeaders(res) {
 }
 
 async function pipeStream(stream, res) {
-  for await (const chunk of stream) {
-    const text = chunk.choices[0]?.delta?.content || "";
+  for await (const text of stream) {
     if (text) res.write(`data: ${JSON.stringify({ text })}\n\n`);
   }
   res.write("data: [DONE]\n\n");
