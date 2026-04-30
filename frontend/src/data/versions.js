@@ -6,7 +6,7 @@ export const VERSIONS = [
     date: "2026-04-30",
     label: "Latest",
     changes: [
-      "Upgraded primary AI to Gemini 2.5 Flash — smarter and faster responses",
+      "Upgraded primary AI to Gemini 3 Flash — latest model from Google AI",
       "Fallback on rate limit now uses Gemma 4 31B — always stays responsive",
     ],
   },
