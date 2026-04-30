@@ -3,7 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const MODEL_PRIMARY  = 'gemini-3-flash-preview';
-const MODEL_FALLBACK = 'gemini-2.5-flash-preview-05-20';
+const MODEL_FALLBACK = 'gemini-2.5-flash';
 export const MODEL   = MODEL_PRIMARY;
 
 // Accept a string prompt or an array of parts (for multimodal requests)
