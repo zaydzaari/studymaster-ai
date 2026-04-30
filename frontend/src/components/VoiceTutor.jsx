@@ -163,6 +163,7 @@ export default function VoiceTutor({ result, isMobile, onVoiceDebug }) {
                 </span>
                 <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                   {status === "connecting" ? "Connecting..."
+                    : status === "reconnecting" ? "Reconnecting..."
                     : status === "listening" ? "Listening..."
                     : status === "speaking" ? "Speaking..."
                     : status === "error" ? "Error"
@@ -232,7 +233,7 @@ export default function VoiceTutor({ result, isMobile, onVoiceDebug }) {
 function StatusDot({ status }) {
   const color =
     status === "listening" || status === "speaking" ? "#16A34A"
-      : status === "connecting" ? "#D97706"
+      : status === "connecting" || status === "reconnecting" ? "#D97706"
       : status === "error" ? "#DC2626"
       : "var(--text-muted)";
   return (
@@ -250,10 +251,12 @@ function EmptyConversation({ status, title }) {
       justifyContent: "center", height: "100%", gap: 10,
       color: "var(--text-muted)", textAlign: "center", padding: 24,
     }}>
-      {status === "connecting" ? (
+      {status === "connecting" || status === "reconnecting" ? (
         <>
           <Spinner />
-          <span style={{ fontSize: 14 }}>Connecting to AI Tutor...</span>
+          <span style={{ fontSize: 14 }}>
+            {status === "reconnecting" ? "Reconnecting..." : "Connecting to AI Tutor..."}
+          </span>
         </>
       ) : (
         <>
@@ -324,7 +327,7 @@ function Bubble({ item }) {
 function MicButton({ status }) {
   const isListening = status === "listening";
   const isSpeaking = status === "speaking";
-  const isConnecting = status === "connecting";
+  const isConnecting = status === "connecting" || status === "reconnecting";
 
   return (
     <div style={{

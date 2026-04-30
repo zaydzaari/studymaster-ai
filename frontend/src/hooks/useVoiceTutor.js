@@ -2,19 +2,17 @@ import { useState, useRef, useCallback, useEffect } from "react";
 
 const RATE_IN = 16000;
 const RATE_OUT = 24000;
+const MAX_RECONNECTS = 5;
 
 function getWsUrl() {
-  // Explicit WebSocket URL (set on Vercel pointing to Railway backend)
   if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
 
-  // Derive from API base URL if set
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL
       .replace(/^https:/, "wss:")
       .replace(/^http:/, "ws:") + "/api/voice";
   }
 
-  // Local dev — same host via Vite proxy
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${proto}//${window.location.host}/api/voice`;
 }
@@ -34,7 +32,6 @@ export function useVoiceTutor() {
   const [errorMsg, setErrorMsg] = useState(null);
   const [audioLevel, setAudioLevel] = useState(0);
 
-  // Debug state
   const [voiceDebug, setVoiceDebug] = useState({
     wsUrl: null,
     wsState: "disconnected",
@@ -48,6 +45,7 @@ export function useVoiceTutor() {
     lastError: null,
     processorType: null,
     openedAt: null,
+    reconnectAttempt: 0,
   });
 
   const wsRef = useRef(null);
@@ -60,10 +58,16 @@ export function useVoiceTutor() {
   const rafRef = useRef(null);
   const nextPlayRef = useRef(0);
   const studyDataRef = useRef(null);
+  const wsUrlRef = useRef(null);
   const chunksSentRef = useRef(0);
   const bytesSentRef = useRef(0);
   const chunksReceivedRef = useRef(0);
   const bytesReceivedRef = useRef(0);
+
+  // Reconnect state
+  const shouldReconnectRef = useRef(false);
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectTimerRef = useRef(null);
 
   const patchDebug = useCallback((patch) => {
     setVoiceDebug(prev => ({ ...prev, ...patch }));
@@ -99,7 +103,6 @@ export function useVoiceTutor() {
     nextPlayRef.current = 0;
   }, []);
 
-  // Hard-stop all queued audio (on barge-in interrupt)
   const killAudio = useCallback(() => {
     try { outCtxRef.current?.close(); } catch {}
     outCtxRef.current = null;
@@ -141,6 +144,9 @@ export function useVoiceTutor() {
   }, [patchDebug]);
 
   const startMic = useCallback(async () => {
+    // Already running — reuse existing mic
+    if (streamRef.current) return true;
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { sampleRate: RATE_IN, channelCount: 1, echoCancellation: true, noiseSuppression: true },
@@ -177,7 +183,6 @@ export function useVoiceTutor() {
           wsRef.current.send(pcm);
           chunksSentRef.current++;
           bytesSentRef.current += pcm.byteLength;
-          // update every 10 chunks to avoid excessive re-renders
           if (chunksSentRef.current % 10 === 0) {
             patchDebug({ chunksSent: chunksSentRef.current, bytesSent: bytesSentRef.current });
           }
@@ -206,45 +211,17 @@ export function useVoiceTutor() {
     }
   }, [patchDebug]);
 
-  const cleanup = useCallback(() => {
-    stopMic();
-    stopPlayback();
+  // Core WS connect — called on first open and on every reconnect attempt
+  const connectWS = useCallback((studyData, wsUrl) => {
+    // Close any existing socket cleanly before opening a new one
     if (wsRef.current) {
       wsRef.current.onclose = null;
-      wsRef.current.close();
+      wsRef.current.onerror = null;
+      try { wsRef.current.close(); } catch {}
       wsRef.current = null;
     }
-    patchDebug({ wsState: "disconnected", sessionConnected: false });
-  }, [stopMic, stopPlayback, patchDebug]);
 
-  const open = useCallback(async (studyData) => {
-    if (!supported) return;
-    studyDataRef.current = studyData;
-    setIsOpen(true);
-    setStatus("connecting");
-    setTranscript([]);
-    setErrorMsg(null);
-
-    chunksSentRef.current = 0;
-    bytesSentRef.current = 0;
-    chunksReceivedRef.current = 0;
-    bytesReceivedRef.current = 0;
-
-    const wsUrl = getWsUrl();
-    patchDebug({
-      wsUrl,
-      wsState: "connecting",
-      sessionConnected: false,
-      chunksSent: 0,
-      bytesSent: 0,
-      chunksReceived: 0,
-      bytesReceived: 0,
-      lastError: null,
-      openedAt: new Date().toISOString(),
-    });
-
-    const micOk = await startMic();
-    if (!micOk) return;
+    patchDebug({ wsState: "connecting", sessionConnected: false });
 
     try {
       const ws = new WebSocket(wsUrl);
@@ -266,13 +243,15 @@ export function useVoiceTutor() {
         try {
           msg = JSON.parse(evt.data);
         } catch {
-          // Non-JSON frame (e.g. tunnel close message) — ignore silently
           return;
         }
 
         if (msg.type === "connected") {
+          // Successful connection — reset reconnect counter
+          reconnectAttemptsRef.current = 0;
           setStatus("listening");
-          patchDebug({ sessionConnected: true });
+          setErrorMsg(null);
+          patchDebug({ sessionConnected: true, reconnectAttempt: 0 });
         } else if (msg.type === "inputTranscript") {
           setTranscript(prev => {
             const last = prev[prev.length - 1];
@@ -290,7 +269,6 @@ export function useVoiceTutor() {
             return [...prev, { role: "tutor", text: msg.text, final: false }];
           });
         } else if (msg.type === "interrupted") {
-          // User spoke while AI was talking — kill queued audio immediately
           killAudio();
           setStatus("listening");
           setTranscript(prev => {
@@ -306,41 +284,113 @@ export function useVoiceTutor() {
           });
           patchDebug({ chunksSent: chunksSentRef.current, bytesSent: bytesSentRef.current });
         } else if (msg.type === "sessionEnded") {
-          setStatus("idle");
-          stopMic();
           patchDebug({ wsState: "disconnected", sessionConnected: false });
+          // sessionEnded = intentional server-side close; treat like a disconnect
         } else if (msg.type === "error") {
           const errMsg = msg.message || "Connection error. Please try again.";
-          setErrorMsg(errMsg);
-          setStatus("error");
-          stopMic();
-          patchDebug({ lastError: errMsg, wsState: "error" });
+          patchDebug({ lastError: errMsg });
+          // Don't set error state here — let onclose trigger reconnect logic
         }
       };
 
-      ws.onerror = (e) => {
-        const errMsg = "WebSocket error — cannot reach backend at " + wsUrl;
-        setErrorMsg(errMsg);
-        setStatus("error");
-        stopMic();
-        patchDebug({ wsState: "error", sessionConnected: false, lastError: errMsg });
+      ws.onerror = () => {
+        patchDebug({ wsState: "error", sessionConnected: false });
+        // onclose always fires after onerror — let onclose handle reconnect
       };
 
-      ws.onclose = (e) => {
-        stopMic();
-        setStatus(s => (s === "error" ? s : "idle"));
+      ws.onclose = () => {
         patchDebug({ wsState: "disconnected", sessionConnected: false });
+
+        if (!shouldReconnectRef.current) {
+          setStatus(s => (s === "error" ? s : "idle"));
+          return;
+        }
+
+        if (reconnectAttemptsRef.current >= MAX_RECONNECTS) {
+          const errMsg = "Connection lost after several retries. Please check your network and try again.";
+          setErrorMsg(errMsg);
+          setStatus("error");
+          patchDebug({ lastError: errMsg });
+          shouldReconnectRef.current = false;
+          return;
+        }
+
+        // Exponential backoff: 1.5s, 3s, 6s, 12s, 24s
+        reconnectAttemptsRef.current += 1;
+        const delay = Math.min(1500 * Math.pow(2, reconnectAttemptsRef.current - 1), 30000);
+        setStatus("reconnecting");
+        patchDebug({ reconnectAttempt: reconnectAttemptsRef.current });
+
+        reconnectTimerRef.current = setTimeout(() => {
+          if (!shouldReconnectRef.current) return;
+          connectWS(studyDataRef.current, wsUrlRef.current);
+        }, delay);
       };
     } catch (err) {
       const errMsg = `Could not connect: ${err.message}`;
       setErrorMsg(errMsg);
       setStatus("error");
-      stopMic();
       patchDebug({ wsState: "error", lastError: errMsg });
     }
-  }, [supported, startMic, stopMic, scheduleAudio, killAudio, patchDebug]);
+  }, [scheduleAudio, killAudio, patchDebug]);
+
+  const cleanup = useCallback(() => {
+    shouldReconnectRef.current = false;
+    clearTimeout(reconnectTimerRef.current);
+    reconnectTimerRef.current = null;
+    stopMic();
+    stopPlayback();
+    if (wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.onerror = null;
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    patchDebug({ wsState: "disconnected", sessionConnected: false });
+  }, [stopMic, stopPlayback, patchDebug]);
+
+  const open = useCallback(async (studyData) => {
+    if (!supported) return;
+    studyDataRef.current = studyData;
+
+    setIsOpen(true);
+    setStatus("connecting");
+    setTranscript([]);
+    setErrorMsg(null);
+
+    chunksSentRef.current = 0;
+    bytesSentRef.current = 0;
+    chunksReceivedRef.current = 0;
+    bytesReceivedRef.current = 0;
+    reconnectAttemptsRef.current = 0;
+
+    const wsUrl = getWsUrl();
+    wsUrlRef.current = wsUrl;
+
+    patchDebug({
+      wsUrl,
+      wsState: "connecting",
+      sessionConnected: false,
+      chunksSent: 0,
+      bytesSent: 0,
+      chunksReceived: 0,
+      bytesReceived: 0,
+      lastError: null,
+      reconnectAttempt: 0,
+      openedAt: new Date().toISOString(),
+    });
+
+    const micOk = await startMic();
+    if (!micOk) return;
+
+    shouldReconnectRef.current = true;
+    connectWS(studyData, wsUrl);
+  }, [supported, startMic, connectWS, patchDebug]);
 
   const close = useCallback(() => {
+    shouldReconnectRef.current = false;
+    clearTimeout(reconnectTimerRef.current);
+    reconnectTimerRef.current = null;
     cleanup();
     setIsOpen(false);
     setStatus("idle");
@@ -350,6 +400,7 @@ export function useVoiceTutor() {
 
   const retry = useCallback(() => {
     cleanup();
+    reconnectAttemptsRef.current = 0;
     setStatus("idle");
     setErrorMsg(null);
     setTimeout(() => open(studyDataRef.current), 100);
