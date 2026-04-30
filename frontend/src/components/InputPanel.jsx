@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import PDFUpload from "./PDFUpload.jsx";
 import URLInput from "./URLInput.jsx";
+import ImageUpload from "./ImageUpload.jsx";
 import { getReadingTime } from "../utils/readingTime.js";
 import { useIsMobile } from "../hooks/useIsMobile.js";
 
@@ -17,19 +18,23 @@ function detectLangSimple(text) {
 
 export default function InputPanel({
   inputText, setInputText, inputType, setInputType,
-  onSubmitText, onSubmitPDF, onSubmitURL,
+  onSubmitText, onSubmitPDF, onSubmitURL, onSubmitImage,
   streaming, history, onRemoveHistory, lang, submitRef,
 }) {
   const { t } = useTranslation();
   const { isMobile } = useIsMobile();
   const [activeTab, setActiveTab] = useState(0);
   const [pdfFile, setPdfFile] = useState(null);
-  const [pdfText, setPdfText] = useState("");
+  const [imageFile, setImageFile] = useState(null);
   const [urlValue, setUrlValue] = useState("");
   const [detectedLang, setDetectedLang] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [outputLang, setOutputLang] = useState("");
+  const [outputLang, setOutputLang] = useState(lang || "");
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    setOutputLang(lang || "");
+  }, [lang]);
 
   useEffect(() => {
     if (inputText.length > 200) {
@@ -39,7 +44,6 @@ export default function InputPanel({
     }
   }, [inputText]);
 
-  // Expand panel when streaming starts so user can see what's happening
   useEffect(() => {
     if (streaming) setIsCollapsed(true);
   }, [streaming]);
@@ -54,18 +58,26 @@ export default function InputPanel({
     if (activeTab === 0) {
       await onSubmitText(inputText, outputLang);
     } else if (activeTab === 1) {
-      await onSubmitText(pdfText, outputLang);
-    } else {
+      await onSubmitPDF(pdfFile, outputLang);
+    } else if (activeTab === 2) {
       await onSubmitURL(urlValue, outputLang);
+    } else {
+      await onSubmitImage(imageFile, outputLang);
     }
-  }, [streaming, activeTab, inputText, pdfText, urlValue, outputLang, onSubmitText, onSubmitURL]);
+  }, [streaming, activeTab, inputText, pdfFile, urlValue, imageFile, outputLang, onSubmitText, onSubmitPDF, onSubmitURL, onSubmitImage]);
 
-  const tabLabel = [t("input.tabs.text"), t("input.tabs.pdf"), t("input.tabs.url")];
+  const tabLabel = [
+    t("input.tabs.text"),
+    t("input.tabs.pdf"),
+    t("input.tabs.url"),
+    t("input.tabs.image") || "Image",
+  ];
 
   const isDisabled = streaming
     || (activeTab === 0 && !inputText.trim())
-    || (activeTab === 1 && !pdfText)
-    || (activeTab === 2 && !urlValue.trim());
+    || (activeTab === 1 && !pdfFile)
+    || (activeTab === 2 && !urlValue.trim())
+    || (activeTab === 3 && !imageFile);
 
   const panelStyle = {
     background: "var(--bg-secondary)",
@@ -186,7 +198,6 @@ export default function InputPanel({
                     e.target.style.boxShadow = "none";
                   }}
                 />
-                {/* Quality indicators */}
                 <div style={{
                   display: "flex",
                   alignItems: "center",
@@ -225,11 +236,15 @@ export default function InputPanel({
             )}
 
             {activeTab === 1 && (
-              <PDFUpload onFile={setPdfFile} onTextExtracted={setPdfText} />
+              <PDFUpload onFile={setPdfFile} />
             )}
 
             {activeTab === 2 && (
               <URLInput value={urlValue} onChange={setUrlValue} />
+            )}
+
+            {activeTab === 3 && (
+              <ImageUpload onFile={setImageFile} />
             )}
 
             {/* Submit */}
@@ -328,7 +343,7 @@ export default function InputPanel({
                           }}
                         >
                           <span style={{ fontSize: 14 }}>
-                            {item.type === "pdf" ? "📄" : item.type === "url" ? "🌐" : "📝"}
+                            {item.type === "pdf" ? "📄" : item.type === "url" ? "🌐" : item.type === "image" ? "🖼️" : "📝"}
                           </span>
                           <span
                             style={{

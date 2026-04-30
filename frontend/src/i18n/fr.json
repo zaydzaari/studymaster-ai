@@ -11,7 +11,8 @@
     "tabs": {
       "text": "Texte",
       "pdf": "PDF",
-      "url": "URL"
+      "url": "URL",
+      "image": "Image"
     },
     "history": "Récents",
     "qualityShort": "Le contenu est peut-être trop court pour un bon résumé",

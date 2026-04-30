@@ -23,7 +23,7 @@ import { useHistory } from "./hooks/useHistory.js";
 import { useStreaming } from "./hooks/useStreaming.js";
 import { useKeyboard } from "./hooks/useKeyboard.js";
 import { useIsMobile } from "./hooks/useIsMobile.js";
-import { getSummarizeTextUrl, getSummarizePDFUrl, getSummarizeURLUrl } from "./utils/api.js";
+import { getSummarizeTextUrl, getSummarizePDFUrl, getSummarizeURLUrl, getSummarizeImageUrl } from "./utils/api.js";
 
 // Map bottom nav tab index → results panel tab index
 const BOTTOM_TO_RESULTS = { 0: 0, 1: 3, 2: 4, 3: 5 };
@@ -109,6 +109,17 @@ export default function App() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, language: outputLang }),
     });
+  }, [streaming, stream, addEntry, recordUsage, increment]);
+
+  const handleSubmitImage = useCallback(async (file, outputLang) => {
+    if (!file || streaming) return;
+    addEntry(file.name, "image");
+    recordUsage();
+    increment("summaries");
+    const form = new FormData();
+    form.append("image", file);
+    if (outputLang) form.append("language", outputLang);
+    await stream(getSummarizeImageUrl(), { body: form });
   }, [streaming, stream, addEntry, recordUsage, increment]);
 
   const resetDemoState = useCallback(() => {
@@ -197,6 +208,7 @@ export default function App() {
     onSubmitText: handleSubmitText,
     onSubmitPDF: handleSubmitPDF,
     onSubmitURL: handleSubmitURL,
+    onSubmitImage: handleSubmitImage,
     streaming, history,
     onRemoveHistory: removeEntry,
     lang, submitRef,

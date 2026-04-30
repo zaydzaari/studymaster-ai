@@ -1,9 +1,15 @@
 import React, { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function PDFUpload({ onFile }) {
+const ACCEPTED_TYPES = new Set([
+  "image/jpeg", "image/jpg", "image/png", "image/webp",
+  "image/gif", "image/heic", "image/heif",
+]);
+
+export default function ImageUpload({ onFile }) {
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [error, setError] = useState("");
   const inputRef = useRef(null);
 
@@ -11,17 +17,21 @@ export default function PDFUpload({ onFile }) {
     if (!f) return;
     setError("");
 
-    if (f.type !== "application/pdf") {
-      setError("Only PDF files are accepted.");
+    if (!ACCEPTED_TYPES.has(f.type)) {
+      setError("Accepted formats: JPEG, PNG, WebP, GIF, HEIC.");
       return;
     }
-    if (f.size > 50 * 1024 * 1024) {
-      setError("PDF must be under 50 MB.");
+    if (f.size > 20 * 1024 * 1024) {
+      setError("Image must be under 20 MB.");
       return;
     }
 
     setFile(f);
     onFile(f);
+
+    const reader = new FileReader();
+    reader.onload = (e) => setPreview(e.target.result);
+    reader.readAsDataURL(f);
   }, [onFile]);
 
   const handleDrop = useCallback((e) => {
@@ -33,6 +43,7 @@ export default function PDFUpload({ onFile }) {
   const reset = useCallback((e) => {
     e.stopPropagation();
     setFile(null);
+    setPreview(null);
     setError("");
     onFile(null);
     if (inputRef.current) inputRef.current.value = "";
@@ -50,7 +61,7 @@ export default function PDFUpload({ onFile }) {
           style={{
             border: `2px ${dragOver ? "solid var(--accent)" : "dashed var(--border)"}`,
             borderRadius: 8,
-            padding: "32px 24px",
+            padding: file ? "16px" : "32px 24px",
             textAlign: "center",
             background: dragOver ? "var(--accent-light)" : "var(--bg-card)",
             cursor: file ? "default" : "pointer",
@@ -60,7 +71,19 @@ export default function PDFUpload({ onFile }) {
           <motion.div animate={{ scale: dragOver ? 1.08 : 1 }}>
             {file ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <div style={{ fontSize: 32 }}>✅</div>
+                {preview && (
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: 200,
+                      borderRadius: 6,
+                      objectFit: "contain",
+                      border: "1px solid var(--border)",
+                    }}
+                  />
+                )}
                 <div style={{ fontWeight: 600, color: "var(--success)", fontSize: 14 }}>{file.name}</div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                   {(file.size / 1024 / 1024).toFixed(2)} MB · Ready to analyze
@@ -71,13 +94,15 @@ export default function PDFUpload({ onFile }) {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <div style={{ fontSize: 32 }}>{dragOver ? "⬇️" : "📄"}</div>
+                <div style={{ fontSize: 36 }}>{dragOver ? "⬇️" : "🖼️"}</div>
                 <div style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>
-                  {dragOver ? "Drop to upload" : "Drag & drop your PDF here"}
+                  {dragOver ? "Drop to upload" : "Drag & drop an image here"}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>or click to browse · max 50MB</div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                  Text, tables, images, handwriting — Gemini reads it all
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  or click to browse · JPEG, PNG, WebP, GIF, HEIC · max 20MB
+                </div>
+                <div style={{ fontSize: 11, color: "var(--accent)", marginTop: 4, fontWeight: 500 }}>
+                  📸 Textbook pages · 📋 Whiteboards · ✍️ Handwritten notes
                 </div>
               </div>
             )}
@@ -98,7 +123,13 @@ export default function PDFUpload({ onFile }) {
         )}
       </AnimatePresence>
 
-      <input ref={inputRef} type="file" accept=".pdf,application/pdf" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/heic,image/heif"
+        style={{ display: "none" }}
+        onChange={e => handleFile(e.target.files[0])}
+      />
     </div>
   );
 }

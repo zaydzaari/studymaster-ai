@@ -22,3 +22,6 @@ export function getSummarizePDFUrl() {
 export function getSummarizeURLUrl() {
   return `${BASE}/api/summarize/url`;
 }
+export function getSummarizeImageUrl() {
+  return `${BASE}/api/summarize/image`;
+}

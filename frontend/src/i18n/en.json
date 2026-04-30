@@ -11,7 +11,8 @@
     "tabs": {
       "text": "Text",
       "pdf": "PDF Upload",
-      "url": "URL"
+      "url": "URL",
+      "image": "Image"
     },
     "history": "Recent",
     "qualityShort": "Content might be too short for a good summary",

@@ -2,11 +2,19 @@ import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const MODEL_PRIMARY  = 'gemini-3-flash-preview';
-const MODEL_FALLBACK = 'gemma-4-31b-it';
+const MODEL_PRIMARY  = 'gemini-2.5-flash-preview-05-20';
+const MODEL_FALLBACK = 'gemini-2.0-flash';
 export const MODEL   = MODEL_PRIMARY;
 
-export async function* streamContent(prompt, debug = {}) {
+// Accept a string prompt or an array of parts (for multimodal requests)
+function buildContents(promptOrParts) {
+  if (typeof promptOrParts === 'string') {
+    return [{ role: 'user', parts: [{ text: promptOrParts }] }];
+  }
+  return [{ role: 'user', parts: promptOrParts }];
+}
+
+export async function* streamContent(promptOrParts, debug = {}) {
   debug.primaryModel  = MODEL_PRIMARY;
   debug.fallbackModel = MODEL_FALLBACK;
   debug.modelUsed     = MODEL_PRIMARY;
@@ -16,7 +24,7 @@ export async function* streamContent(prompt, debug = {}) {
   debug.ttft          = null;
   debug.startTime     = Date.now();
 
-  const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+  const contents = buildContents(promptOrParts);
 
   for (const model of [MODEL_PRIMARY, MODEL_FALLBACK]) {
     try {
@@ -47,7 +55,7 @@ export async function* streamContent(prompt, debug = {}) {
   }
 }
 
-export async function generateContent(prompt, debug = {}) {
+export async function generateContent(promptOrParts, debug = {}) {
   debug.primaryModel  = MODEL_PRIMARY;
   debug.fallbackModel = MODEL_FALLBACK;
   debug.modelUsed     = MODEL_PRIMARY;
@@ -55,7 +63,7 @@ export async function generateContent(prompt, debug = {}) {
   debug.primaryError  = null;
   debug.startTime     = Date.now();
 
-  const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+  const contents = buildContents(promptOrParts);
 
   for (const model of [MODEL_PRIMARY, MODEL_FALLBACK]) {
     try {
@@ -88,6 +96,90 @@ CONTENT:
 """
 ${content.slice(0, 50000)}
 """
+
+Return EXACTLY this JSON. No markdown. No code blocks. Valid JSON only:
+
+{
+  "meta": {
+    "title": "Short descriptive title (max 8 words)",
+    "difficulty": "beginner",
+    "readingTime": 3,
+    "summaryReadingTime": 0.5,
+    "subject": "Technology",
+    "language": "en"
+  },
+  "summary": "2-3 paragraph summary. Clear. Simple. Covers main ideas and conclusions.",
+  "keyPoints": [
+    "First key concept — specific and informative",
+    "Second key concept",
+    "Third key concept",
+    "Fourth key concept",
+    "Fifth key concept"
+  ],
+  "learningObjectives": [
+    "Understand the fundamentals of the topic",
+    "Learn how the core concepts work in practice",
+    "Master the relationship between key ideas"
+  ],
+  "concepts": ["concept1", "concept2", "concept3", "concept4", "concept5"],
+  "keyQuote": "The single most important sentence from the content",
+  "studyQuestions": [
+    { "question": "Simple recall question?", "difficulty": "easy" },
+    { "question": "Understanding question?", "difficulty": "medium" },
+    { "question": "Application question?", "difficulty": "hard" },
+    { "question": "Another easy question?", "difficulty": "easy" },
+    { "question": "Analysis question?", "difficulty": "medium" }
+  ],
+  "flashcards": [
+    { "front": "Term or question", "back": "Definition or answer" },
+    { "front": "Term or question", "back": "Definition or answer" },
+    { "front": "Term or question", "back": "Definition or answer" },
+    { "front": "Term or question", "back": "Definition or answer" },
+    { "front": "Term or question", "back": "Definition or answer" },
+    { "front": "Term or question", "back": "Definition or answer" }
+  ],
+  "quiz": [
+    {
+      "question": "Question about a core concept?",
+      "options": ["Correct answer", "Wrong answer", "Wrong answer", "Wrong answer"],
+      "correctAnswer": 0,
+      "explanation": "Why this is correct and why others are wrong."
+    },
+    {
+      "question": "Second question?",
+      "options": ["Wrong", "Wrong", "Correct", "Wrong"],
+      "correctAnswer": 2,
+      "explanation": "Explanation."
+    },
+    {
+      "question": "Third question?",
+      "options": ["Wrong", "Correct", "Wrong", "Wrong"],
+      "correctAnswer": 1,
+      "explanation": "Explanation."
+    },
+    {
+      "question": "Fourth question?",
+      "options": ["Wrong", "Wrong", "Wrong", "Correct"],
+      "correctAnswer": 3,
+      "explanation": "Explanation."
+    },
+    {
+      "question": "Fifth question?",
+      "options": ["Correct", "Wrong", "Wrong", "Wrong"],
+      "correctAnswer": 0,
+      "explanation": "Explanation."
+    }
+  ]
+}`;
+}
+
+// Prompt for multimodal inputs (PDF, image) — content is passed as inline data, not in the text
+export function buildMultimodalPrompt(outputLanguage = 'same as input') {
+  return `You are StudyMaster AI — an expert educational content analyzer.
+
+Analyze the provided content (document, image, or handwritten notes) and generate a complete study package.
+
+OUTPUT LANGUAGE: ${outputLanguage}
 
 Return EXACTLY this JSON. No markdown. No code blocks. Valid JSON only:
 
