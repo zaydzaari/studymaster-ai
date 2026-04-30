@@ -2,8 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const MODEL_PRIMARY  = 'gemini-3-flash-live';
-const MODEL_FALLBACK = 'gemma-4-32b';
+const MODEL_PRIMARY  = 'gemini-2.0-flash';
+const MODEL_FALLBACK = 'gemini-2.0-flash-lite';
 export const MODEL   = MODEL_PRIMARY;
 
 function is429(err) {

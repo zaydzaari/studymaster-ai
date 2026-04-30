@@ -6,8 +6,8 @@ export const VERSIONS = [
     date: "2026-04-30",
     label: "Latest",
     changes: [
-      "Switched AI engine to Gemini 3 Flash Live for faster, smarter responses",
-      "Auto-fallback to Gemma 4 32B when rate limited — no interruptions",
+      "Switched AI engine to Gemini 2.0 Flash for faster, smarter responses",
+      "Auto-fallback to Gemini 2.0 Flash Lite when rate limited — no interruptions",
       "Added AI Voice Tutor (speak with an AI that knows your material)",
       "Deployed to Vercel with GitHub auto-deploy on every push",
     ],

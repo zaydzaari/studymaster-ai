@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import { buildVoiceTutorPrompt } from '../utils/gemini.js';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL = 'gemini-3-flash-live';
+const MODEL = 'gemini-2.0-flash-live-001';
 const WS_OPEN = 1;
 
 export function setupVoiceWebSocket(wss) {
