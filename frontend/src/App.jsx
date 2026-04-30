@@ -13,6 +13,7 @@ import BottomNav from "./components/BottomNav.jsx";
 import Toast from "./components/Toast.jsx";
 import DemoRunner from "./components/DemoRunner.jsx";
 import VoiceTutor from "./components/VoiceTutor.jsx";
+import ChangelogModal from "./components/ChangelogModal.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 import { useLanguage } from "./hooks/useLanguage.js";
 import { useStats } from "./hooks/useStats.js";
@@ -44,6 +45,7 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
   const submitRef = useRef(null);
 
   // ── Demo mode state ───────────────────────────────────────────────
@@ -232,6 +234,7 @@ export default function App() {
         onChangeLang={changeLanguage}
         streak={streak}
         onOpenMenu={() => setMenuOpen(true)}
+        onOpenChangelog={() => setChangelogOpen(true)}
       />
 
       {/* Stats bar — desktop/tablet only (hidden on mobile via CSS) */}
@@ -344,6 +347,13 @@ export default function App() {
       <AnimatePresence>
         {showShortcuts && (
           <KeyboardShortcuts onClose={() => setShowShortcuts(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Changelog modal */}
+      <AnimatePresence>
+        {changelogOpen && (
+          <ChangelogModal onClose={() => setChangelogOpen(false)} />
         )}
       </AnimatePresence>
 

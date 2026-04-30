@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../hooks/useIsMobile.js";
+import { CURRENT_VERSION } from "../data/versions.js";
 
 const LANGUAGES = [
   { code: "en", label: "EN" },
@@ -16,7 +17,7 @@ const Logo = () => (
   </svg>
 );
 
-export default function Header({ theme, onToggleTheme, lang, onChangeLang, streak, onOpenMenu }) {
+export default function Header({ theme, onToggleTheme, lang, onChangeLang, streak, onOpenMenu, onOpenChangelog }) {
   const { t } = useTranslation();
   const { isMobile, isTablet } = useIsMobile();
 
@@ -59,6 +60,27 @@ export default function Header({ theme, onToggleTheme, lang, onChangeLang, strea
             StudyMaster
           </span>
         )}
+        {/* Version badge — clickable */}
+        <button
+          onClick={onOpenChangelog}
+          title="What's new"
+          style={{
+            padding: "2px 7px",
+            background: "var(--accent-light)",
+            color: "var(--accent)",
+            border: "1px solid rgba(37,99,235,0.2)",
+            borderRadius: 999,
+            fontSize: 10,
+            fontWeight: 700,
+            fontFamily: "'Geist Mono', monospace",
+            cursor: "pointer",
+            letterSpacing: "0.02em",
+            flexShrink: 0,
+            transition: "background 0.15s",
+          }}
+        >
+          v{CURRENT_VERSION}
+        </button>
       </div>
 
       {/* Right side controls */}
@@ -84,7 +106,7 @@ export default function Header({ theme, onToggleTheme, lang, onChangeLang, strea
 
         {/* Language selector — desktop only */}
         {!isMobile && (
-          <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <div data-demo-id="lang-selector" style={{ display: "flex", alignItems: "center", gap: 2 }}>
             {LANGUAGES.map(l => (
               <button
                 key={l.code}
