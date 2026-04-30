@@ -381,6 +381,9 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* AI Voice Tutor */}
+      <VoiceTutor result={displayResult} isMobile={isMobile} />
+
       {/* Debug panel */}
       <DebugPanel
         streamDebug={debugInfo}
