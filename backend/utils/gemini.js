@@ -6,10 +6,6 @@ const MODEL_PRIMARY  = 'gemini-3-flash-preview';
 const MODEL_FALLBACK = 'gemma-4-31b-it';
 export const MODEL   = MODEL_PRIMARY;
 
-function is429(err) {
-  return err?.status === 429 || String(err?.message).includes('429');
-}
-
 export async function* streamContent(prompt) {
   const contents = [{ role: 'user', parts: [{ text: prompt }] }];
   for (const model of [MODEL_PRIMARY, MODEL_FALLBACK]) {
@@ -21,8 +17,8 @@ export async function* streamContent(prompt) {
       }
       return;
     } catch (err) {
-      if (is429(err) && model === MODEL_PRIMARY) {
-        console.log(`Rate limited on ${MODEL_PRIMARY} — switching to ${MODEL_FALLBACK}`);
+      if (model === MODEL_PRIMARY) {
+        console.log(`${MODEL_PRIMARY} failed (${err?.status ?? err?.message?.slice(0, 60)}) — switching to ${MODEL_FALLBACK}`);
         continue;
       }
       throw err;
@@ -37,8 +33,8 @@ export async function generateContent(prompt) {
       const result = await ai.models.generateContent({ model, contents });
       return result.text || '';
     } catch (err) {
-      if (is429(err) && model === MODEL_PRIMARY) {
-        console.log(`Rate limited on ${MODEL_PRIMARY} — switching to ${MODEL_FALLBACK}`);
+      if (model === MODEL_PRIMARY) {
+        console.log(`${MODEL_PRIMARY} failed (${err?.status ?? err?.message?.slice(0, 60)}) — switching to ${MODEL_FALLBACK}`);
         continue;
       }
       throw err;
