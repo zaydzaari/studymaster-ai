@@ -1,45 +1,50 @@
 import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-export const MODEL = 'gemini-3-flash-live';
 
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const MODEL_PRIMARY  = 'gemini-3-flash-live';
+const MODEL_FALLBACK = 'gemma-4-32b';
+export const MODEL   = MODEL_PRIMARY;
 
-async function withRetry(fn, maxAttempts = 3) {
-  const delays = [3000, 6000, 10000];
-  for (let i = 0; i < maxAttempts; i++) {
+function is429(err) {
+  return err?.status === 429 || String(err?.message).includes('429');
+}
+
+export async function* streamContent(prompt) {
+  const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+  for (const model of [MODEL_PRIMARY, MODEL_FALLBACK]) {
     try {
-      return await fn();
+      const stream = await ai.models.generateContentStream({ model, contents });
+      for await (const chunk of stream) {
+        const text = chunk.text || '';
+        if (text) yield text;
+      }
+      return;
     } catch (err) {
-      const is429 = err?.status === 429 || String(err?.message).includes('429');
-      if (!is429 || i === maxAttempts - 1) throw err;
-      console.log(`Rate limited — retrying in ${delays[i] / 1000}s (attempt ${i + 1}/${maxAttempts})`);
-      await sleep(delays[i]);
+      if (is429(err) && model === MODEL_PRIMARY) {
+        console.log(`Rate limited on ${MODEL_PRIMARY} — switching to ${MODEL_FALLBACK}`);
+        continue;
+      }
+      throw err;
     }
   }
 }
 
-export async function* streamContent(prompt) {
-  const stream = await withRetry(() =>
-    ai.models.generateContentStream({
-      model: MODEL,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    })
-  );
-  for await (const chunk of stream) {
-    const text = chunk.text || '';
-    if (text) yield text;
-  }
-}
-
 export async function generateContent(prompt) {
-  const result = await withRetry(() =>
-    ai.models.generateContent({
-      model: MODEL,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    })
-  );
-  return result.text || '';
+  const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+  for (const model of [MODEL_PRIMARY, MODEL_FALLBACK]) {
+    try {
+      const result = await ai.models.generateContent({ model, contents });
+      return result.text || '';
+    } catch (err) {
+      if (is429(err) && model === MODEL_PRIMARY) {
+        console.log(`Rate limited on ${MODEL_PRIMARY} — switching to ${MODEL_FALLBACK}`);
+        continue;
+      }
+      throw err;
+    }
+  }
+  return '';
 }
 
 export function buildMasterPrompt(content, outputLanguage = 'same as input') {

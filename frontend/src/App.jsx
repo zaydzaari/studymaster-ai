@@ -368,9 +368,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* AI Voice Tutor */}
-      <VoiceTutor result={displayResult} isMobile={isMobile} />
-
       {/* Cinematic demo runner */}
       {demoActive && (
         <DemoRunner
