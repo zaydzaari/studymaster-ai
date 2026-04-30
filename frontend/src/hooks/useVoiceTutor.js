@@ -58,10 +58,17 @@ export function useVoiceTutor() {
     setVoiceDebug(prev => ({ ...prev, ...patch }));
   }, []);
 
+  // Voice tutor requires a persistent WebSocket server — not available on Vercel serverless
+  const isLocalhost = typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
   const supported =
+    isLocalhost &&
     typeof WebSocket !== "undefined" &&
     typeof navigator !== "undefined" &&
     !!navigator?.mediaDevices?.getUserMedia;
+
+  const unavailableOnDeploy = !isLocalhost;
 
   const stopMic = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
@@ -81,6 +88,13 @@ export function useVoiceTutor() {
   }, []);
 
   const stopPlayback = useCallback(() => {
+    try { outCtxRef.current?.close(); } catch {}
+    outCtxRef.current = null;
+    nextPlayRef.current = 0;
+  }, []);
+
+  // Hard-stop all queued audio (on barge-in interrupt)
+  const killAudio = useCallback(() => {
     try { outCtxRef.current?.close(); } catch {}
     outCtxRef.current = null;
     nextPlayRef.current = 0;
@@ -262,6 +276,15 @@ export function useVoiceTutor() {
             }
             return [...prev, { role: "tutor", text: msg.text, final: false }];
           });
+        } else if (msg.type === "interrupted") {
+          // User spoke while AI was talking — kill queued audio immediately
+          killAudio();
+          setStatus("listening");
+          setTranscript(prev => {
+            const last = prev[prev.length - 1];
+            if (last && !last.final) return [...prev.slice(0, -1), { ...last, final: true }];
+            return prev;
+          });
         } else if (msg.type === "turnComplete") {
           setTranscript(prev => {
             const last = prev[prev.length - 1];
@@ -302,7 +325,7 @@ export function useVoiceTutor() {
       stopMic();
       patchDebug({ wsState: "error", lastError: errMsg });
     }
-  }, [supported, startMic, stopMic, scheduleAudio, patchDebug]);
+  }, [supported, startMic, stopMic, scheduleAudio, killAudio, patchDebug]);
 
   const close = useCallback(() => {
     cleanup();
@@ -321,5 +344,5 @@ export function useVoiceTutor() {
 
   useEffect(() => cleanup, [cleanup]);
 
-  return { isOpen, status, transcript, errorMsg, audioLevel, supported, open, close, retry, voiceDebug };
+  return { isOpen, status, transcript, errorMsg, audioLevel, supported, unavailableOnDeploy, open, close, retry, voiceDebug };
 }

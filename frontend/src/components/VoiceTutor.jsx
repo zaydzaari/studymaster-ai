@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useVoiceTutor } from "../hooks/useVoiceTutor.js";
 
 export default function VoiceTutor({ result, isMobile, onVoiceDebug }) {
-  const { isOpen, status, transcript, errorMsg, audioLevel, supported, open, close, retry, voiceDebug } =
+  const { isOpen, status, transcript, errorMsg, audioLevel, supported, unavailableOnDeploy, open, close, retry, voiceDebug } =
     useVoiceTutor();
 
   // Forward debug info to parent whenever it changes
@@ -16,7 +16,39 @@ export default function VoiceTutor({ result, isMobile, onVoiceDebug }) {
     }
   }, [transcript]);
 
-  if (!supported || !result) return null;
+  if (!result) return null;
+
+  // On Vercel / production: WebSockets need a persistent server — show grayed button
+  if (unavailableOnDeploy) {
+    return (
+      <div
+        title="Voice Tutor requires a persistent server — run locally with npm run dev"
+        style={{
+          position: "fixed",
+          bottom: isMobile ? 88 : 24,
+          right: 20,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "10px 18px",
+          background: "var(--bg-secondary)",
+          color: "var(--text-muted)",
+          border: "1px solid var(--border)",
+          borderRadius: 999,
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: "not-allowed",
+          zIndex: 900,
+          userSelect: "none",
+        }}
+      >
+        <MicIcon size={15} color="var(--text-muted)" />
+        Tutor (local only)
+      </div>
+    );
+  }
+
+  if (!supported) return null;
 
   const studyData = {
     title: result.meta?.title || "",

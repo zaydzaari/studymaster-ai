@@ -85,6 +85,11 @@ export function setupVoiceWebSocket(wss) {
                     }
                   }
 
+                  // User interrupted the AI mid-speech
+                  if (message.serverContent?.interrupted) {
+                    send({ type: 'interrupted' });
+                  }
+
                   // Turn complete
                   if (message.serverContent?.turnComplete) {
                     send({ type: 'turnComplete' });
