@@ -25,11 +25,10 @@ export function setupVoiceWebSocket(wss) {
       session = null;
     }
 
-    ws.on('message', async (data) => {
+    ws.on('message', async (data, isBinary) => {
       resetTimer();
       try {
-        // JSON control messages start with '{'
-        if (data instanceof Buffer && data[0] === 0x7b) {
+        if (!isBinary) {
           const msg = JSON.parse(data.toString());
 
           if (msg.type === 'start') {
@@ -107,7 +106,7 @@ export function setupVoiceWebSocket(wss) {
           }
 
           if (msg.type === 'stop') cleanup();
-        } else if (session) {
+        } else if (isBinary && session) {
           // Binary frame = raw PCM-16 audio at 16 kHz from the client
           session.sendRealtimeInput({
             audio: { data: data.toString('base64'), mimeType: 'audio/pcm;rate=16000' },
