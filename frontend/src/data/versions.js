@@ -1,13 +1,22 @@
-export const CURRENT_VERSION = "1.2.0";
+export const CURRENT_VERSION = "1.2.1";
 
 export const VERSIONS = [
   {
-    version: "1.2.0",
+    version: "1.2.1",
     date: "2026-04-30",
     label: "Latest",
     changes: [
+      "Upgraded primary AI to Gemini 2.5 Flash — smarter and faster responses",
+      "Fallback on rate limit now uses Gemma 4 31B — always stays responsive",
+    ],
+  },
+  {
+    version: "1.2.0",
+    date: "2026-04-30",
+    label: null,
+    changes: [
       "Switched AI engine to Gemini 2.0 Flash for faster, smarter responses",
-      "Auto-fallback to Gemini 2.0 Flash Lite when rate limited — no interruptions",
+      "Auto-fallback to Gemini 1.5 Flash when rate limited — no interruptions",
       "Added AI Voice Tutor (speak with an AI that knows your material)",
       "Deployed to Vercel with GitHub auto-deploy on every push",
     ],
