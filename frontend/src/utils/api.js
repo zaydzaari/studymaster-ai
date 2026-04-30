@@ -25,3 +25,6 @@ export function getSummarizeURLUrl() {
 export function getSummarizeImageUrl() {
   return `${BASE}/api/summarize/image`;
 }
+export function getSummarizeMergeUrl() {
+  return `${BASE}/api/summarize/merge`;
+}

@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import DeepDivePanel from "./DeepDivePanel.jsx";
-import { useTTS } from "../hooks/useTTS.js";
+import { useGeminiTTS } from "../hooks/useGeminiTTS.js";
 
 export default function SummaryView({ result, lang, addToast, demoControl, onDebug }) {
   const { t } = useTranslation();
-  const { speaking, speak, stop } = useTTS();
+  const { speaking, loading: ttsLoading, speak, stop } = useGeminiTTS();
   const [deepDiveConcept, setDeepDiveConcept] = useState(null);
   const [copied, setCopied] = useState(false);
 
@@ -22,7 +22,6 @@ export default function SummaryView({ result, lang, addToast, demoControl, onDeb
 
   const handleTTS = () => {
     if (isPlaying) {
-      window.speechSynthesis?.cancel();
       stop();
     } else {
       speak(result.summary || "", result.meta?.language || lang);
@@ -58,8 +57,9 @@ export default function SummaryView({ result, lang, addToast, demoControl, onDeb
               borderRadius: 6,
               fontSize: 12,
               color: isPlaying ? "var(--accent)" : "var(--text-secondary)",
-              cursor: "pointer",
+              cursor: ttsLoading ? "wait" : "pointer",
               transition: "all 0.2s",
+              opacity: ttsLoading ? 0.7 : 1,
             }}
           >
             {isPlaying ? (

@@ -1,5 +1,6 @@
 export const DEMO_TYPING_TEXT = `Machine learning is a transformative subset of artificial intelligence that enables computers to learn from experience without being explicitly programmed. At its core, ML uses algorithms and statistical models to identify patterns in data, allowing systems to make intelligent decisions. The three main paradigms are supervised learning, unsupervised learning, and reinforcement learning. Key concepts include neural networks, gradient descent, overfitting, and model evaluation metrics such as precision, recall, and F1 score.`;
 
+
 export const DEMO_RESULT = {
   meta: {
     title: "Machine Learning Fundamentals",
@@ -138,4 +139,46 @@ export const DEMO_RESULT = {
     "Implement a simple model (e.g., linear regression) from scratch to build intuition",
     "Practice evaluating models using precision, recall, and F1 score on real datasets",
   ],
+};
+
+// Pre-loaded French result — no API call, shown instantly during demo Act 7
+export const DEMO_RESULT_FR = {
+  ...DEMO_RESULT,
+  meta: {
+    ...DEMO_RESULT.meta,
+    title: "Fondamentaux du Machine Learning",
+    language: "French",
+  },
+  summary: `L'apprentissage automatique est une branche de l'intelligence artificielle qui permet aux ordinateurs d'apprendre à partir de données sans être explicitement programmés. Les systèmes ML identifient des patterns pour prendre des décisions intelligentes.\n\nLes trois paradigmes principaux sont l'apprentissage supervisé, non supervisé et par renforcement. Chaque paradigme est adapté à différents types de problèmes et d'applications.\n\nLes concepts clés incluent les réseaux de neurones, la descente de gradient et des métriques d'évaluation comme la précision, le rappel et le score F1. Comprendre le surapprentissage est essentiel pour construire des modèles robustes.`,
+  keyPoints: [
+    "Le ML permet aux ordinateurs d'apprendre sans programmation explicite",
+    "Trois approches : supervisé, non supervisé, par renforcement",
+    "La qualité des données est plus importante que l'algorithme",
+    "Le surapprentissage survient quand le modèle mémorise les données",
+    "Les métriques d'évaluation incluent la précision et le rappel",
+    "Les réseaux de neurones s'inspirent du cerveau humain",
+  ],
+  concepts: ["Apprentissage Automatique", "Réseaux de Neurones", "Gradient", "Précision", "Rappel", "Surapprentissage"],
+  keyQuote: "L'apprentissage automatique donne aux ordinateurs la capacité d'apprendre sans être explicitement programmés. — Arthur Samuel, 1959",
+};
+
+// Pre-loaded Arabic result — no API call, shown instantly during demo Act 7
+export const DEMO_RESULT_AR = {
+  ...DEMO_RESULT,
+  meta: {
+    ...DEMO_RESULT.meta,
+    title: "أساسيات التعلم الآلي",
+    language: "Arabic",
+  },
+  summary: `التعلم الآلي هو فرع من الذكاء الاصطناعي يمكّن الحواسيب من التعلم من البيانات دون أن تكون مبرمجة صراحةً. يستخدم النظام خوارزميات ونماذج إحصائية للتعرف على الأنماط واتخاذ قرارات ذكية.\n\nيشمل المجال ثلاثة مناهج رئيسية: التعلم المشرف، والتعلم غير المشرف، والتعلم التعزيزي. كل منهج مناسب لأنواع مختلفة من المشكلات والتطبيقات.\n\nتتضمن المفاهيم التقنية الأساسية الشبكات العصبية، ونزول التدرج، ومقاييس التقييم كالدقة والاسترجاع. يعدّ فهم الإفراط في التدريب أمراً ضرورياً لبناء نماذج موثوقة.`,
+  keyPoints: [
+    "يتيح التعلم الآلي للحواسيب التعلم دون برمجة صريحة",
+    "ثلاثة مناهج رئيسية: المشرف، غير المشرف، والتعزيزي",
+    "جودة البيانات أهم من تعقيد الخوارزمية",
+    "الإفراط في التدريب يحدث عندما يحفظ النموذج البيانات",
+    "مقاييس التقييم تشمل الدقة والاسترجاع",
+    "الشبكات العصبية مستوحاة من الدماغ البشري",
+  ],
+  concepts: ["التعلم الآلي", "الشبكات العصبية", "نزول التدرج", "الدقة", "الاسترجاع", "الإفراط في التدريب"],
+  keyQuote: "التعلم الآلي يمنح الحواسيب القدرة على التعلم دون برمجة صريحة — آرثر صامويل، 1959",
 };

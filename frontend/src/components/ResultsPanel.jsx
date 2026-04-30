@@ -7,6 +7,7 @@ import SummaryView from "./SummaryView.jsx";
 import FlashcardView from "./FlashcardView.jsx";
 import QuizView from "./QuizView.jsx";
 import QuestionsView from "./QuestionsView.jsx";
+import MindMapView from "./MindMapView.jsx";
 import PomodoroTimer from "./PomodoroTimer.jsx";
 import ExportButton from "./ExportButton.jsx";
 import { exportToPDF } from "../utils/pdfExport.js";
@@ -36,10 +37,12 @@ export default function ResultsPanel({
     { key: "questions", label: t("results.tabs.questions") },
     { key: "flashcards", label: t("results.tabs.flashcards") },
     { key: "quiz", label: t("results.tabs.quiz") },
+    { key: "mindmap", label: "🗺 Mind Map" },
   ];
 
   const tabUnlocked = [
     true,
+    !!result,
     !!result,
     !!result,
     !!result,
@@ -209,6 +212,9 @@ export default function ResultsPanel({
                 addToast={addToast}
                 demoControl={demoControl}
               />
+            )}
+            {activeTab === 6 && (
+              <MindMapView result={result} />
             )}
           </motion.div>
         </AnimatePresence>

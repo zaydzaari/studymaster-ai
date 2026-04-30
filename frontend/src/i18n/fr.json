@@ -12,7 +12,8 @@
       "text": "Texte",
       "pdf": "PDF",
       "url": "URL",
-      "image": "Image"
+      "image": "Image",
+      "merge": "Multi-Doc"
     },
     "history": "Récents",
     "qualityShort": "Le contenu est peut-être trop court pour un bon résumé",

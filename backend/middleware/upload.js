@@ -30,3 +30,21 @@ export const uploadImage = multer({
   },
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
 });
+
+const MERGE_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg", "image/jpg", "image/png", "image/webp",
+  "image/gif", "image/heic", "image/heif",
+]);
+
+export const uploadAny = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (MERGE_TYPES.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only PDF and image files accepted"), false);
+    }
+  },
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB per file
+});

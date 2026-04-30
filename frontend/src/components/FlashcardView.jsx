@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useKeyboard } from "../hooks/useKeyboard.js";
+import { useSpacedRepetition } from "../hooks/useSpacedRepetition.js";
 
 export default function FlashcardView({ result, onViewed, addToast, demoControl }) {
   const { t } = useTranslation();
-  const cards = result.flashcards || [];
+  const rawCards = result.flashcards || [];
+  const { recordAnswer, dueCount, sortedCards } = useSpacedRepetition(rawCards);
+  const cards = demoControl?.flashcard ? rawCards : sortedCards;
   const [localIndex, setLocalIndex] = useState(0);
   const [localFlipped, setLocalFlipped] = useState(false);
   const [localRatings, setLocalRatings] = useState({});
@@ -47,6 +50,7 @@ export default function FlashcardView({ result, onViewed, addToast, demoControl 
 
   const rate = (rating) => {
     setRatings(prev => ({ ...prev, [index]: rating }));
+    if (!dc) recordAnswer(card.front, rating);
     if (index < cards.length - 1) {
       setTimeout(() => go(1), 300);
     }
@@ -96,7 +100,25 @@ export default function FlashcardView({ result, onViewed, addToast, demoControl 
     <div>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <div style={{ fontSize: 16, fontWeight: 600 }}>{t("results.flashcards")}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ fontSize: 16, fontWeight: 600 }}>{t("results.flashcards")}</div>
+          {dueCount > 0 && !dc && (
+            <span style={{
+              background: "#FEF3C7", color: "#92400E", fontSize: 11, fontWeight: 700,
+              padding: "2px 8px", borderRadius: 999, border: "1px solid #FDE68A",
+            }}>
+              🔁 {dueCount} due
+            </span>
+          )}
+          {dueCount === 0 && rawCards.length > 0 && !dc && (
+            <span style={{
+              background: "#D1FAE5", color: "#065F46", fontSize: 11, fontWeight: 700,
+              padding: "2px 8px", borderRadius: 999,
+            }}>
+              ✅ All reviewed
+            </span>
+          )}
+        </div>
         <button onClick={handleCopy} style={{
           padding: "4px 10px",
           background: "var(--bg-secondary)",

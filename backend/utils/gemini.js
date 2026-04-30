@@ -85,6 +85,21 @@ export async function generateContent(promptOrParts, debug = {}) {
   return '';
 }
 
+const MINDMAP_SCHEMA = `,
+  "mindmap": {
+    "label": "Central topic (max 4 words)",
+    "children": [
+      { "label": "Branch A (max 4 words)", "children": [{ "label": "Sub 1" }, { "label": "Sub 2" }] },
+      { "label": "Branch B (max 4 words)", "children": [{ "label": "Sub 3" }, { "label": "Sub 4" }] },
+      { "label": "Branch C (max 4 words)", "children": [{ "label": "Sub 5" }] },
+      { "label": "Branch D (max 4 words)", "children": [{ "label": "Sub 6" }] },
+      { "label": "Branch E (max 4 words)", "children": [{ "label": "Sub 7" }] }
+    ]
+  }
+}
+
+MIND MAP RULES: Generate 3 to 5 main branches, 1 to 3 children each. All labels max 4 words. Labels must be in the OUTPUT LANGUAGE.`;
+
 export function buildMasterPrompt(content, outputLanguage = 'same as input') {
   return `You are StudyMaster AI — an expert educational content analyzer.
 
@@ -169,8 +184,7 @@ Return EXACTLY this JSON. No markdown. No code blocks. Valid JSON only:
       "correctAnswer": 0,
       "explanation": "Explanation."
     }
-  ]
-}`;
+  ]${MINDMAP_SCHEMA}`;
 }
 
 // Prompt for multimodal inputs (PDF, image) — content is passed as inline data, not in the text
@@ -253,8 +267,7 @@ Return EXACTLY this JSON. No markdown. No code blocks. Valid JSON only:
       "correctAnswer": 0,
       "explanation": "Explanation."
     }
-  ]
-}`;
+  ]${MINDMAP_SCHEMA}`;
 }
 
 export function buildDeepDivePrompt(concept, subject) {

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import PDFUpload from "./PDFUpload.jsx";
 import URLInput from "./URLInput.jsx";
 import ImageUpload from "./ImageUpload.jsx";
+import MultiUpload from "./MultiUpload.jsx";
 import { getReadingTime } from "../utils/readingTime.js";
 import { useIsMobile } from "../hooks/useIsMobile.js";
 
@@ -18,7 +19,7 @@ function detectLangSimple(text) {
 
 export default function InputPanel({
   inputText, setInputText, inputType, setInputType,
-  onSubmitText, onSubmitPDF, onSubmitURL, onSubmitImage,
+  onSubmitText, onSubmitPDF, onSubmitURL, onSubmitImage, onSubmitMerge,
   streaming, history, onRemoveHistory, lang, submitRef,
 }) {
   const { t } = useTranslation();
@@ -26,6 +27,7 @@ export default function InputPanel({
   const [activeTab, setActiveTab] = useState(0);
   const [pdfFile, setPdfFile] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+  const [mergeFiles, setMergeFiles] = useState(null);
   const [urlValue, setUrlValue] = useState("");
   const [detectedLang, setDetectedLang] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -61,23 +63,27 @@ export default function InputPanel({
       await onSubmitPDF(pdfFile, outputLang);
     } else if (activeTab === 2) {
       await onSubmitURL(urlValue, outputLang);
-    } else {
+    } else if (activeTab === 3) {
       await onSubmitImage(imageFile, outputLang);
+    } else {
+      await onSubmitMerge(mergeFiles, outputLang);
     }
-  }, [streaming, activeTab, inputText, pdfFile, urlValue, imageFile, outputLang, onSubmitText, onSubmitPDF, onSubmitURL, onSubmitImage]);
+  }, [streaming, activeTab, inputText, pdfFile, urlValue, imageFile, mergeFiles, outputLang, onSubmitText, onSubmitPDF, onSubmitURL, onSubmitImage, onSubmitMerge]);
 
   const tabLabel = [
     t("input.tabs.text"),
     t("input.tabs.pdf"),
     t("input.tabs.url"),
     t("input.tabs.image") || "Image",
+    t("input.tabs.merge") || "Multi-Doc",
   ];
 
   const isDisabled = streaming
     || (activeTab === 0 && !inputText.trim())
     || (activeTab === 1 && !pdfFile)
     || (activeTab === 2 && !urlValue.trim())
-    || (activeTab === 3 && !imageFile);
+    || (activeTab === 3 && !imageFile)
+    || (activeTab === 4 && !mergeFiles);
 
   const panelStyle = {
     background: "var(--bg-secondary)",
@@ -245,6 +251,10 @@ export default function InputPanel({
 
             {activeTab === 3 && (
               <ImageUpload onFile={setImageFile} />
+            )}
+
+            {activeTab === 4 && (
+              <MultiUpload onFiles={setMergeFiles} />
             )}
 
             {/* Submit */}

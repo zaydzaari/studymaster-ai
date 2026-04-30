@@ -12,7 +12,8 @@
       "text": "Text",
       "pdf": "PDF Upload",
       "url": "URL",
-      "image": "Image"
+      "image": "Image",
+      "merge": "Multi-Doc"
     },
     "history": "Recent",
     "qualityShort": "Content might be too short for a good summary",

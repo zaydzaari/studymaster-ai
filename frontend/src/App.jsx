@@ -23,7 +23,8 @@ import { useHistory } from "./hooks/useHistory.js";
 import { useStreaming } from "./hooks/useStreaming.js";
 import { useKeyboard } from "./hooks/useKeyboard.js";
 import { useIsMobile } from "./hooks/useIsMobile.js";
-import { getSummarizeTextUrl, getSummarizePDFUrl, getSummarizeURLUrl, getSummarizeImageUrl } from "./utils/api.js";
+import TextTutor from "./components/TextTutor.jsx";
+import { getSummarizeTextUrl, getSummarizePDFUrl, getSummarizeURLUrl, getSummarizeImageUrl, getSummarizeMergeUrl } from "./utils/api.js";
 
 // Map bottom nav tab index → results panel tab index
 const BOTTOM_TO_RESULTS = { 0: 0, 1: 3, 2: 4, 3: 5 };
@@ -122,6 +123,17 @@ export default function App() {
     await stream(getSummarizeImageUrl(), { body: form });
   }, [streaming, stream, addEntry, recordUsage, increment]);
 
+  const handleSubmitMerge = useCallback(async (files, outputLang) => {
+    if (!files?.length || streaming) return;
+    addEntry(`${files.length} files merged`, "merge");
+    recordUsage();
+    increment("summaries");
+    const form = new FormData();
+    for (const f of files) form.append("files", f);
+    if (outputLang) form.append("language", outputLang);
+    await stream(getSummarizeMergeUrl(), { body: form });
+  }, [streaming, stream, addEntry, recordUsage, increment]);
+
   const resetDemoState = useCallback(() => {
     changeLangRef.current(preDemoLangRef.current); // restore pre-demo language
     window.speechSynthesis?.cancel();              // stop any demo TTS
@@ -209,6 +221,7 @@ export default function App() {
     onSubmitPDF: handleSubmitPDF,
     onSubmitURL: handleSubmitURL,
     onSubmitImage: handleSubmitImage,
+    onSubmitMerge: handleSubmitMerge,
     streaming, history,
     onRemoveHistory: removeEntry,
     lang, submitRef,
@@ -394,8 +407,9 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* AI Voice Tutor */}
+      {/* AI Tutors */}
       <VoiceTutor result={displayResult} isMobile={isMobile} onVoiceDebug={setVoiceDebug} />
+      <TextTutor result={displayResult} isMobile={isMobile} />
 
       {/* Debug panel */}
       <DebugPanel

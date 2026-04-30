@@ -2,7 +2,7 @@ import { Router } from "express";
 import axios from "axios";
 import { streamContent, buildMasterPrompt, buildMultimodalPrompt } from "../utils/gemini.js";
 import { apiLimiter } from "../middleware/rateLimit.js";
-import { upload, uploadImage } from "../middleware/upload.js";
+import { upload, uploadImage, uploadAny } from "../middleware/upload.js";
 
 const router = Router();
 
@@ -133,6 +133,34 @@ router.post("/image", apiLimiter, uploadImage.single("image"), async (req, res) 
       return res.status(500).json({ error: "Failed to process image. Please try again." });
     }
     res.write(`data: ${JSON.stringify({ error: "Image processing failed." })}\n\n`);
+    res.end();
+  }
+});
+
+// Multi-file merge — synthesize 2–5 PDFs/images into one study package
+router.post("/merge", apiLimiter, uploadAny.array("files", 5), async (req, res) => {
+  if (!req.files || req.files.length < 2) {
+    return res.status(400).json({ error: "Upload at least 2 files to merge." });
+  }
+
+  try {
+    sseHeaders(res);
+    const { language } = req.body;
+    const parts = [
+      { text: `You are synthesizing ${req.files.length} documents into one unified study package. Find common themes, differences, and create a coherent study package that covers all documents.` },
+      ...req.files.map(f => ({ inlineData: { mimeType: f.mimetype, data: f.buffer.toString("base64") } })),
+      { text: buildMultimodalPrompt(language || "same as input") },
+    ];
+    const totalSize = req.files.reduce((a, f) => a + f.size, 0);
+    const debug = { inputType: 'merge', inputLength: totalSize, fileCount: req.files.length, requestedAt: new Date().toISOString() };
+    const stream = streamContent(parts, debug);
+    await pipeStream(stream, res, debug);
+  } catch (error) {
+    console.error("Merge error:", error.message);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Failed to merge files. Please try again." });
+    }
+    res.write(`data: ${JSON.stringify({ error: "Merge processing failed." })}\n\n`);
     res.end();
   }
 });
