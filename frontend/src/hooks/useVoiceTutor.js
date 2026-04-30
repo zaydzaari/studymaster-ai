@@ -4,6 +4,17 @@ const RATE_IN = 16000;
 const RATE_OUT = 24000;
 
 function getWsUrl() {
+  // Explicit WebSocket URL (set on Vercel pointing to Railway backend)
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+
+  // Derive from API base URL if set
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL
+      .replace(/^https:/, "wss:")
+      .replace(/^http:/, "ws:") + "/api/voice";
+  }
+
+  // Local dev — same host via Vite proxy
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${proto}//${window.location.host}/api/voice`;
 }
@@ -58,17 +69,12 @@ export function useVoiceTutor() {
     setVoiceDebug(prev => ({ ...prev, ...patch }));
   }, []);
 
-  // Voice tutor requires a persistent WebSocket server — not available on Vercel serverless
-  const isLocalhost = typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-
   const supported =
-    isLocalhost &&
     typeof WebSocket !== "undefined" &&
     typeof navigator !== "undefined" &&
     !!navigator?.mediaDevices?.getUserMedia;
 
-  const unavailableOnDeploy = !isLocalhost;
+  const unavailableOnDeploy = false;
 
   const stopMic = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
