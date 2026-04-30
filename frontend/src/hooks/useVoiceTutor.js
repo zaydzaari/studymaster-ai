@@ -261,7 +261,14 @@ export function useVoiceTutor() {
           scheduleAudio(evt.data);
           return;
         }
-        const msg = JSON.parse(evt.data);
+
+        let msg;
+        try {
+          msg = JSON.parse(evt.data);
+        } catch {
+          // Non-JSON frame (e.g. tunnel close message) — ignore silently
+          return;
+        }
 
         if (msg.type === "connected") {
           setStatus("listening");
@@ -316,13 +323,13 @@ export function useVoiceTutor() {
         setErrorMsg(errMsg);
         setStatus("error");
         stopMic();
-        patchDebug({ wsState: "error", lastError: errMsg });
+        patchDebug({ wsState: "error", sessionConnected: false, lastError: errMsg });
       };
 
       ws.onclose = (e) => {
         stopMic();
         setStatus(s => (s === "error" ? s : "idle"));
-        patchDebug({ wsState: "disconnected" });
+        patchDebug({ wsState: "disconnected", sessionConnected: false });
       };
     } catch (err) {
       const errMsg = `Could not connect: ${err.message}`;
