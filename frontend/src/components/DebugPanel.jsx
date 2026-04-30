@@ -57,7 +57,13 @@ function Section({ title, children }) {
   );
 }
 
-export default function DebugPanel({ streamDebug, deepDiveDebug, streaming }) {
+function bytes(n) {
+  if (n == null) return "—";
+  if (n < 1024) return `${n} B`;
+  return `${(n / 1024).toFixed(1)} KB`;
+}
+
+export default function DebugPanel({ streamDebug, deepDiveDebug, voiceDebug, streaming }) {
   const [open, setOpen] = useState(true);
 
   const d = streamDebug;
@@ -181,6 +187,51 @@ export default function DebugPanel({ streamDebug, deepDiveDebug, streaming }) {
           {d?.requestedAt && (
             <Section title="Last Request">
               <Row label="Time" value={new Date(d.requestedAt).toLocaleTimeString()} />
+            </Section>
+          )}
+
+          {/* ── VOICE TUTOR ── */}
+          {voiceDebug && (
+            <Section title="Voice Tutor">
+              {/* WS state */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <span style={{
+                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                  background:
+                    voiceDebug.wsState === "open" ? "#22c55e"
+                    : voiceDebug.wsState === "connecting" ? "#f59e0b"
+                    : voiceDebug.wsState === "error" ? "#ef4444"
+                    : "#94a3b8",
+                }} />
+                <span style={{ fontSize: 11, color: "var(--text-primary)", fontWeight: 600 }}>
+                  WS: {voiceDebug.wsState}
+                </span>
+                {voiceDebug.sessionConnected && (
+                  <Badge color="green">SESSION OK</Badge>
+                )}
+              </div>
+
+              <Row label="Mic" value={
+                voiceDebug.micGranted === null ? "not asked"
+                : voiceDebug.micGranted ? `granted (${voiceDebug.micSampleRate || "?"}Hz)`
+                : "DENIED"
+              } />
+              <Row label="WS URL" value={voiceDebug.wsUrl ? voiceDebug.wsUrl.replace("ws://", "").replace("wss://", "") : "—"} mono />
+              <Row label="Audio → server" value={`${voiceDebug.chunksSent ?? 0} chunks / ${bytes(voiceDebug.bytesSent)}`} mono />
+              <Row label="Audio ← server" value={`${voiceDebug.chunksReceived ?? 0} chunks / ${bytes(voiceDebug.bytesReceived)}`} mono />
+              {voiceDebug.openedAt && (
+                <Row label="Opened at" value={new Date(voiceDebug.openedAt).toLocaleTimeString()} />
+              )}
+              {voiceDebug.lastError && (
+                <div style={{
+                  fontSize: 10, color: "#dc2626",
+                  background: "#fef2f2", border: "1px solid #fecaca",
+                  borderRadius: 4, padding: "3px 6px", marginTop: 4,
+                  wordBreak: "break-word", lineHeight: 1.4,
+                }}>
+                  ⚠ {voiceDebug.lastError}
+                </div>
+              )}
             </Section>
           )}
 

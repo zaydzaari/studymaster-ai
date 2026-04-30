@@ -2,9 +2,12 @@ import React, { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useVoiceTutor } from "../hooks/useVoiceTutor.js";
 
-export default function VoiceTutor({ result, isMobile }) {
-  const { isOpen, status, transcript, errorMsg, audioLevel, supported, open, close, retry } =
+export default function VoiceTutor({ result, isMobile, onVoiceDebug }) {
+  const { isOpen, status, transcript, errorMsg, audioLevel, supported, open, close, retry, voiceDebug } =
     useVoiceTutor();
+
+  // Forward debug info to parent whenever it changes
+  React.useEffect(() => { onVoiceDebug?.(voiceDebug); }, [voiceDebug, onVoiceDebug]);
   const scrollRef = useRef(null);
 
   useEffect(() => {

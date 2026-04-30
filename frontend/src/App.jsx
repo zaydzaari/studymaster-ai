@@ -38,6 +38,7 @@ export default function App() {
   const { history, addEntry, removeEntry } = useHistory();
   const { stream, streamText, streaming, result, error, abort, debugInfo } = useStreaming();
   const [deepDiveDebug, setDeepDiveDebug] = useState(null);
+  const [voiceDebug, setVoiceDebug] = useState(null);
   const { isMobile, isTablet, isDesktop } = useIsMobile();
 
   const [inputText, setInputText] = useState("");
@@ -382,12 +383,13 @@ export default function App() {
       </AnimatePresence>
 
       {/* AI Voice Tutor */}
-      <VoiceTutor result={displayResult} isMobile={isMobile} />
+      <VoiceTutor result={displayResult} isMobile={isMobile} onVoiceDebug={setVoiceDebug} />
 
       {/* Debug panel */}
       <DebugPanel
         streamDebug={debugInfo}
         deepDiveDebug={deepDiveDebug}
+        voiceDebug={voiceDebug}
         streaming={displayStreaming}
       />
 

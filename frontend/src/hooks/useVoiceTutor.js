@@ -18,10 +18,26 @@ function f32ToI16(f32) {
 
 export function useVoiceTutor() {
   const [isOpen, setIsOpen] = useState(false);
-  const [status, setStatus] = useState("idle"); // idle | connecting | listening | speaking | error
+  const [status, setStatus] = useState("idle");
   const [transcript, setTranscript] = useState([]);
   const [errorMsg, setErrorMsg] = useState(null);
   const [audioLevel, setAudioLevel] = useState(0);
+
+  // Debug state
+  const [voiceDebug, setVoiceDebug] = useState({
+    wsUrl: null,
+    wsState: "disconnected",
+    micGranted: null,
+    micSampleRate: null,
+    sessionConnected: false,
+    chunksSent: 0,
+    bytesSent: 0,
+    chunksReceived: 0,
+    bytesReceived: 0,
+    lastError: null,
+    processorType: null,
+    openedAt: null,
+  });
 
   const wsRef = useRef(null);
   const inCtxRef = useRef(null);
@@ -33,6 +49,14 @@ export function useVoiceTutor() {
   const rafRef = useRef(null);
   const nextPlayRef = useRef(0);
   const studyDataRef = useRef(null);
+  const chunksSentRef = useRef(0);
+  const bytesSentRef = useRef(0);
+  const chunksReceivedRef = useRef(0);
+  const bytesReceivedRef = useRef(0);
+
+  const patchDebug = useCallback((patch) => {
+    setVoiceDebug(prev => ({ ...prev, ...patch }));
+  }, []);
 
   const supported =
     typeof WebSocket !== "undefined" &&
@@ -64,6 +88,10 @@ export function useVoiceTutor() {
 
   const scheduleAudio = useCallback((buf) => {
     try {
+      chunksReceivedRef.current++;
+      bytesReceivedRef.current += buf.byteLength;
+      patchDebug({ chunksReceived: chunksReceivedRef.current, bytesReceived: bytesReceivedRef.current });
+
       if (!outCtxRef.current || outCtxRef.current.state === "closed") {
         outCtxRef.current = new AudioContext({ sampleRate: RATE_OUT });
         nextPlayRef.current = outCtxRef.current.currentTime + 0.05;
@@ -90,7 +118,7 @@ export function useVoiceTutor() {
         }
       };
     } catch {}
-  }, []);
+  }, [patchDebug]);
 
   const startMic = useCallback(async () => {
     try {
@@ -99,9 +127,18 @@ export function useVoiceTutor() {
       });
       streamRef.current = stream;
 
+      const track = stream.getAudioTracks()[0];
+      const settings = track.getSettings();
+
       const ctx = new AudioContext({ sampleRate: RATE_IN });
       await ctx.resume();
       inCtxRef.current = ctx;
+
+      patchDebug({
+        micGranted: true,
+        micSampleRate: settings.sampleRate || ctx.sampleRate,
+        processorType: "ScriptProcessor",
+      });
 
       const source = ctx.createMediaStreamSource(stream);
       sourceRef.current = source;
@@ -116,7 +153,14 @@ export function useVoiceTutor() {
       processorRef.current = processor;
       processor.onaudioprocess = (e) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(f32ToI16(e.inputBuffer.getChannelData(0)).buffer);
+          const pcm = f32ToI16(e.inputBuffer.getChannelData(0)).buffer;
+          wsRef.current.send(pcm);
+          chunksSentRef.current++;
+          bytesSentRef.current += pcm.byteLength;
+          // update every 10 chunks to avoid excessive re-renders
+          if (chunksSentRef.current % 10 === 0) {
+            patchDebug({ chunksSent: chunksSentRef.current, bytesSent: bytesSentRef.current });
+          }
         }
       };
       source.connect(processor);
@@ -132,15 +176,15 @@ export function useVoiceTutor() {
 
       return true;
     } catch (err) {
-      setErrorMsg(
-        err.name === "NotAllowedError"
-          ? "Please allow microphone access to use the AI Tutor."
-          : "Could not access microphone. Please try again."
-      );
+      const msg = err.name === "NotAllowedError"
+        ? "Mic blocked — please allow microphone in browser settings."
+        : `Mic error: ${err.name} — ${err.message}`;
+      setErrorMsg(msg);
       setStatus("error");
+      patchDebug({ micGranted: false, lastError: msg });
       return false;
     }
-  }, []);
+  }, [patchDebug]);
 
   const cleanup = useCallback(() => {
     stopMic();
@@ -150,7 +194,8 @@ export function useVoiceTutor() {
       wsRef.current.close();
       wsRef.current = null;
     }
-  }, [stopMic, stopPlayback]);
+    patchDebug({ wsState: "disconnected", sessionConnected: false });
+  }, [stopMic, stopPlayback, patchDebug]);
 
   const open = useCallback(async (studyData) => {
     if (!supported) return;
@@ -160,16 +205,34 @@ export function useVoiceTutor() {
     setTranscript([]);
     setErrorMsg(null);
 
-    // Request mic immediately while in user-gesture context
+    chunksSentRef.current = 0;
+    bytesSentRef.current = 0;
+    chunksReceivedRef.current = 0;
+    bytesReceivedRef.current = 0;
+
+    const wsUrl = getWsUrl();
+    patchDebug({
+      wsUrl,
+      wsState: "connecting",
+      sessionConnected: false,
+      chunksSent: 0,
+      bytesSent: 0,
+      chunksReceived: 0,
+      bytesReceived: 0,
+      lastError: null,
+      openedAt: new Date().toISOString(),
+    });
+
     const micOk = await startMic();
     if (!micOk) return;
 
     try {
-      const ws = new WebSocket(getWsUrl());
+      const ws = new WebSocket(wsUrl);
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
 
       ws.onopen = () => {
+        patchDebug({ wsState: "open" });
         ws.send(JSON.stringify({ type: "start", context: studyData }));
       };
 
@@ -182,6 +245,7 @@ export function useVoiceTutor() {
 
         if (msg.type === "connected") {
           setStatus("listening");
+          patchDebug({ sessionConnected: true });
         } else if (msg.type === "inputTranscript") {
           setTranscript(prev => {
             const last = prev[prev.length - 1];
@@ -204,32 +268,41 @@ export function useVoiceTutor() {
             if (last && !last.final) return [...prev.slice(0, -1), { ...last, final: true }];
             return prev;
           });
+          patchDebug({ chunksSent: chunksSentRef.current, bytesSent: bytesSentRef.current });
         } else if (msg.type === "sessionEnded") {
           setStatus("idle");
           stopMic();
+          patchDebug({ wsState: "disconnected", sessionConnected: false });
         } else if (msg.type === "error") {
-          setErrorMsg(msg.message || "Connection error. Please try again.");
+          const errMsg = msg.message || "Connection error. Please try again.";
+          setErrorMsg(errMsg);
           setStatus("error");
           stopMic();
+          patchDebug({ lastError: errMsg, wsState: "error" });
         }
       };
 
-      ws.onerror = () => {
-        setErrorMsg("Could not connect to AI Tutor. Please try again.");
+      ws.onerror = (e) => {
+        const errMsg = "WebSocket error — cannot reach backend at " + wsUrl;
+        setErrorMsg(errMsg);
         setStatus("error");
         stopMic();
+        patchDebug({ wsState: "error", lastError: errMsg });
       };
 
-      ws.onclose = () => {
+      ws.onclose = (e) => {
         stopMic();
         setStatus(s => (s === "error" ? s : "idle"));
+        patchDebug({ wsState: "disconnected" });
       };
-    } catch {
-      setErrorMsg("Could not connect. Please try again.");
+    } catch (err) {
+      const errMsg = `Could not connect: ${err.message}`;
+      setErrorMsg(errMsg);
       setStatus("error");
       stopMic();
+      patchDebug({ wsState: "error", lastError: errMsg });
     }
-  }, [supported, startMic, stopMic, scheduleAudio]);
+  }, [supported, startMic, stopMic, scheduleAudio, patchDebug]);
 
   const close = useCallback(() => {
     cleanup();
@@ -248,5 +321,5 @@ export function useVoiceTutor() {
 
   useEffect(() => cleanup, [cleanup]);
 
-  return { isOpen, status, transcript, errorMsg, audioLevel, supported, open, close, retry };
+  return { isOpen, status, transcript, errorMsg, audioLevel, supported, open, close, retry, voiceDebug };
 }
