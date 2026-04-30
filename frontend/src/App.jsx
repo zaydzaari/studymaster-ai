@@ -14,6 +14,7 @@ import Toast from "./components/Toast.jsx";
 import DemoRunner from "./components/DemoRunner.jsx";
 import VoiceTutor from "./components/VoiceTutor.jsx";
 import ChangelogModal from "./components/ChangelogModal.jsx";
+import DebugPanel from "./components/DebugPanel.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 import { useLanguage } from "./hooks/useLanguage.js";
 import { useStats } from "./hooks/useStats.js";
@@ -35,7 +36,8 @@ export default function App() {
   const { stats, increment } = useStats();
   const { streak, recordUsage } = useStreak();
   const { history, addEntry, removeEntry } = useHistory();
-  const { stream, streamText, streaming, result, error, abort } = useStreaming();
+  const { stream, streamText, streaming, result, error, abort, debugInfo } = useStreaming();
+  const [deepDiveDebug, setDeepDiveDebug] = useState(null);
   const { isMobile, isTablet, isDesktop } = useIsMobile();
 
   const [inputText, setInputText] = useState("");
@@ -223,6 +225,7 @@ export default function App() {
     onFlashcardsViewed: handleFlashcardsViewed,
     addToast,
     demoControl,
+    onDeepDiveDebug: setDeepDiveDebug,
   };
 
   return (
@@ -377,6 +380,13 @@ export default function App() {
           }} />
         )}
       </AnimatePresence>
+
+      {/* Debug panel */}
+      <DebugPanel
+        streamDebug={debugInfo}
+        deepDiveDebug={deepDiveDebug}
+        streaming={displayStreaming}
+      />
 
       {/* Cinematic demo runner */}
       {demoActive && (

@@ -12,16 +12,14 @@ router.post("/", deepDiveLimiter, async (req, res) => {
   }
 
   try {
+    const debug = { inputType: 'deepdive', requestedAt: new Date().toISOString() };
     const prompt = buildDeepDivePrompt(concept.slice(0, 200), subject.slice(0, 100));
-    const text = await generateContent(prompt);
+    const text = await generateContent(prompt, debug);
     const cleaned = text.trim().replace(/^```json?\n?/, "").replace(/\n?```$/, "");
     const parsed = JSON.parse(cleaned);
-    res.json(parsed);
+    res.json({ ...parsed, __debug: debug });
   } catch (error) {
     console.error("Deep dive error:", error.message);
-    if (error.message?.includes("429")) {
-      return res.status(429).json({ error: "Too many requests. Try again in a minute." });
-    }
     res.status(500).json({ error: "Failed to get explanation. Please try again." });
   }
 });

@@ -15,10 +15,11 @@ function sseHeaders(res) {
   res.flushHeaders();
 }
 
-async function pipeStream(stream, res) {
+async function pipeStream(stream, res, debug) {
   for await (const text of stream) {
     if (text) res.write(`data: ${JSON.stringify({ text })}\n\n`);
   }
+  res.write(`data: ${JSON.stringify({ __debug: debug })}\n\n`);
   res.write("data: [DONE]\n\n");
   res.end();
 }
@@ -33,15 +34,13 @@ router.post("/text", apiLimiter, async (req, res) => {
 
   try {
     sseHeaders(res);
+    const debug = { inputType: 'text', inputLength: content.length, requestedAt: new Date().toISOString() };
     const prompt = buildMasterPrompt(content.slice(0, 50000), language || "same as input");
-    const stream = await streamContent(prompt);
-    await pipeStream(stream, res);
+    const stream = streamContent(prompt, debug);
+    await pipeStream(stream, res, debug);
   } catch (error) {
     console.error("Summarize error:", error.message);
     if (!res.headersSent) {
-      if (error.message?.includes("429")) {
-        return res.status(429).json({ error: "Too many requests. Try again in a minute." });
-      }
       return res.status(500).json({ error: "Processing failed. Please try again." });
     }
     res.write(`data: ${JSON.stringify({ error: "Processing failed." })}\n\n`);
@@ -63,9 +62,10 @@ router.post("/pdf", apiLimiter, upload.single("pdf"), async (req, res) => {
 
     sseHeaders(res);
     const { language } = req.body;
+    const debug = { inputType: 'pdf', inputLength: text.length, requestedAt: new Date().toISOString() };
     const prompt = buildMasterPrompt(text, language || "same as input");
-    const stream = await streamContent(prompt);
-    await pipeStream(stream, res);
+    const stream = streamContent(prompt, debug);
+    await pipeStream(stream, res, debug);
   } catch (error) {
     console.error("PDF error:", error.message);
     if (!res.headersSent) {
@@ -88,9 +88,10 @@ router.post("/url", apiLimiter, async (req, res) => {
     }
 
     sseHeaders(res);
+    const debug = { inputType: 'url', inputLength: text.length, requestedAt: new Date().toISOString() };
     const prompt = buildMasterPrompt(text, language || "same as input");
-    const stream = await streamContent(prompt);
-    await pipeStream(stream, res);
+    const stream = streamContent(prompt, debug);
+    await pipeStream(stream, res, debug);
   } catch (error) {
     console.error("URL error:", error.message);
     if (!res.headersSent) {

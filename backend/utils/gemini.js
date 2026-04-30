@@ -6,18 +6,39 @@ const MODEL_PRIMARY  = 'gemini-3-flash-preview';
 const MODEL_FALLBACK = 'gemma-4-31b-it';
 export const MODEL   = MODEL_PRIMARY;
 
-export async function* streamContent(prompt) {
+export async function* streamContent(prompt, debug = {}) {
+  debug.primaryModel  = MODEL_PRIMARY;
+  debug.fallbackModel = MODEL_FALLBACK;
+  debug.modelUsed     = MODEL_PRIMARY;
+  debug.fallback      = false;
+  debug.primaryError  = null;
+  debug.chunks        = 0;
+  debug.ttft          = null;
+  debug.startTime     = Date.now();
+
   const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+
   for (const model of [MODEL_PRIMARY, MODEL_FALLBACK]) {
     try {
+      debug.modelUsed = model;
+      if (model === MODEL_FALLBACK) debug.fallback = true;
+
       const stream = await ai.models.generateContentStream({ model, contents });
+
       for await (const chunk of stream) {
         const text = chunk.text || '';
-        if (text) yield text;
+        if (text) {
+          if (debug.ttft === null) debug.ttft = Date.now() - debug.startTime;
+          debug.chunks++;
+          yield text;
+        }
       }
+
+      debug.duration = Date.now() - debug.startTime;
       return;
     } catch (err) {
       if (model === MODEL_PRIMARY) {
+        debug.primaryError = `${err?.status ?? 'error'} — ${String(err?.message).slice(0, 100)}`;
         console.log(`${MODEL_PRIMARY} failed (${err?.status ?? err?.message?.slice(0, 60)}) — switching to ${MODEL_FALLBACK}`);
         continue;
       }
@@ -26,14 +47,27 @@ export async function* streamContent(prompt) {
   }
 }
 
-export async function generateContent(prompt) {
+export async function generateContent(prompt, debug = {}) {
+  debug.primaryModel  = MODEL_PRIMARY;
+  debug.fallbackModel = MODEL_FALLBACK;
+  debug.modelUsed     = MODEL_PRIMARY;
+  debug.fallback      = false;
+  debug.primaryError  = null;
+  debug.startTime     = Date.now();
+
   const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+
   for (const model of [MODEL_PRIMARY, MODEL_FALLBACK]) {
     try {
+      debug.modelUsed = model;
+      if (model === MODEL_FALLBACK) debug.fallback = true;
+
       const result = await ai.models.generateContent({ model, contents });
+      debug.duration = Date.now() - debug.startTime;
       return result.text || '';
     } catch (err) {
       if (model === MODEL_PRIMARY) {
+        debug.primaryError = `${err?.status ?? 'error'} — ${String(err?.message).slice(0, 100)}`;
         console.log(`${MODEL_PRIMARY} failed (${err?.status ?? err?.message?.slice(0, 60)}) — switching to ${MODEL_FALLBACK}`);
         continue;
       }

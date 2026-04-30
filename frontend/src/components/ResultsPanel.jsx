@@ -24,7 +24,7 @@ export default function ResultsPanel({
   result, streamText, streaming, error,
   lang, activeTab, setActiveTab,
   onQuizComplete, onFlashcardsViewed, addToast,
-  demoControl,
+  demoControl, onDeepDiveDebug,
 }) {
   const { t } = useTranslation();
   const [showDeepDive, setShowDeepDive] = useState(false);
@@ -183,7 +183,7 @@ export default function ResultsPanel({
             {activeTab === 0 && demoControl?.streamingSummary != null ? (
               <DemoStreamingView text={demoControl.streamingSummary} />
             ) : activeTab === 0 ? (
-              <SummaryView result={result} lang={lang} addToast={addToast} />
+              <SummaryView result={result} lang={lang} addToast={addToast} demoControl={demoControl} onDebug={onDeepDiveDebug} />
             ) : null}
             {activeTab === 1 && (
               <KeyPointsView result={result} addToast={addToast} />

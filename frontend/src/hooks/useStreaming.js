@@ -5,6 +5,7 @@ export function useStreaming() {
   const [streaming, setStreaming] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState(null);
   const bufferRef = useRef("");
   const abortRef = useRef(null);
 
@@ -19,6 +20,8 @@ export function useStreaming() {
     setResult(null);
     setError(null);
     bufferRef.current = "";
+
+    const clientStart = Date.now();
 
     try {
       const controller = new AbortController();
@@ -62,6 +65,10 @@ export function useStreaming() {
 
           try {
             const parsed = JSON.parse(data);
+            if (parsed.__debug) {
+              setDebugInfo({ ...parsed.__debug, clientDuration: Date.now() - clientStart });
+              continue;
+            }
             if (parsed.error) {
               setError(parsed.error);
               setStreaming(false);
@@ -90,5 +97,5 @@ export function useStreaming() {
     setStreaming(false);
   }, []);
 
-  return { stream, streamText, streaming, result, error, abort };
+  return { stream, streamText, streaming, result, error, abort, debugInfo };
 }

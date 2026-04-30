@@ -4,11 +4,14 @@ import { useTranslation } from "react-i18next";
 import DeepDivePanel from "./DeepDivePanel.jsx";
 import { useTTS } from "../hooks/useTTS.js";
 
-export default function SummaryView({ result, lang, addToast }) {
+export default function SummaryView({ result, lang, addToast, demoControl, onDebug }) {
   const { t } = useTranslation();
   const { speaking, speak, stop } = useTTS();
   const [deepDiveConcept, setDeepDiveConcept] = useState(null);
   const [copied, setCopied] = useState(false);
+
+  // True when TTS is active — either via useTTS hook or driven by demo
+  const isPlaying = speaking || !!demoControl?.ttsActive;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(result.summary || "");
@@ -18,7 +21,8 @@ export default function SummaryView({ result, lang, addToast }) {
   };
 
   const handleTTS = () => {
-    if (speaking) {
+    if (isPlaying) {
+      window.speechSynthesis?.cancel();
       stop();
     } else {
       speak(result.summary || "", result.meta?.language || lang);
@@ -42,22 +46,23 @@ export default function SummaryView({ result, lang, addToast }) {
         <div style={{ display: "flex", gap: 8 }}>
           {/* Listen */}
           <button
+            data-demo-id="listen-btn"
             onClick={handleTTS}
             style={{
               display: "flex",
               alignItems: "center",
               gap: 6,
               padding: "5px 12px",
-              background: speaking ? "var(--accent-light)" : "var(--bg-secondary)",
-              border: `1px solid ${speaking ? "var(--accent)" : "var(--border)"}`,
+              background: isPlaying ? "var(--accent-light)" : "var(--bg-secondary)",
+              border: `1px solid ${isPlaying ? "var(--accent)" : "var(--border)"}`,
               borderRadius: 6,
               fontSize: 12,
-              color: speaking ? "var(--accent)" : "var(--text-secondary)",
+              color: isPlaying ? "var(--accent)" : "var(--text-secondary)",
               cursor: "pointer",
               transition: "all 0.2s",
             }}
           >
-            {speaking ? (
+            {isPlaying ? (
               <>
                 <div className="audio-bars">
                   <span /><span /><span /><span />
@@ -189,6 +194,7 @@ export default function SummaryView({ result, lang, addToast }) {
           concept={deepDiveConcept}
           subject={result.meta?.subject || "General"}
           onClose={() => setDeepDiveConcept(null)}
+          onDebug={onDebug}
         />
       )}
     </div>

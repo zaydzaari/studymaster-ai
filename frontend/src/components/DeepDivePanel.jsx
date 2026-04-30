@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { deepDive } from "../utils/api.js";
 
-export default function DeepDivePanel({ concept, subject, onClose }) {
+export default function DeepDivePanel({ concept, subject, onClose, onDebug }) {
   const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,7 +14,12 @@ export default function DeepDivePanel({ concept, subject, onClose }) {
     setLoading(true);
     setError(null);
     deepDive(concept, subject)
-      .then(d => { if (!cancelled) setData(d); })
+      .then(d => {
+        if (cancelled) return;
+        const { __debug, ...rest } = d;
+        if (__debug && onDebug) onDebug(__debug);
+        setData(rest);
+      })
       .catch(e => { if (!cancelled) setError(e.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
