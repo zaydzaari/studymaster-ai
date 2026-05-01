@@ -318,6 +318,25 @@ button, a {
 
   /* Scrollable tabs: prevent wrapping */
   .tabs-scroll { flex-wrap: nowrap !important; overflow-x: auto !important; }
+
+  /* Quiz action buttons (hint / submit / next / try again) */
+  .quiz-action-btn {
+    min-height: 44px !important;
+    font-size: 15px !important;
+  }
+
+  /* Results panel header actions */
+  .result-action-btn {
+    min-height: 44px !important;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+  }
+
+  /* Tutor chat send button */
+  .tutor-send-btn {
+    width: 44px !important;
+    height: 44px !important;
+  }
 }
 
 /* ─── Tablet (640px – 1023px) ─────────────────────────────────── */

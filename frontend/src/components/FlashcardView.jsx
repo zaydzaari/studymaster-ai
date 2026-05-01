@@ -161,7 +161,7 @@ export default function FlashcardView({ result, onViewed, addToast, demoControl,
         <button
           onClick={() => go(-1)}
           style={{
-            width: 40, height: 40, borderRadius: "50%", border: "1px solid var(--border)",
+            width: 44, height: 44, borderRadius: "50%", border: "1px solid var(--border)",
             background: "var(--bg-secondary)", cursor: "pointer", display: "flex",
             alignItems: "center", justifyContent: "center", fontSize: 18,
             color: "var(--text-secondary)", transition: "all 0.15s", flexShrink: 0,
@@ -204,7 +204,7 @@ export default function FlashcardView({ result, onViewed, addToast, demoControl,
         <button
           onClick={() => go(1)}
           style={{
-            width: 40, height: 40, borderRadius: "50%", border: "1px solid var(--border)",
+            width: 44, height: 44, borderRadius: "50%", border: "1px solid var(--border)",
             background: "var(--bg-secondary)", cursor: "pointer", display: "flex",
             alignItems: "center", justifyContent: "center", fontSize: 18,
             color: "var(--text-secondary)", transition: "all 0.15s", flexShrink: 0,

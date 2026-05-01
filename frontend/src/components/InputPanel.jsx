@@ -255,7 +255,7 @@ export default function InputPanel({
                   title="Attach PDF or image (or drag & drop)"
                   style={{
                     display: "flex", alignItems: "center", gap: 5,
-                    padding: "6px 11px", background: "var(--bg-secondary)",
+                    padding: isMobile ? "10px 14px" : "6px 11px", background: "var(--bg-secondary)",
                     border: "1px solid var(--border)", borderRadius: 7,
                     fontSize: 13, color: "var(--text-secondary)",
                     cursor: "pointer", fontWeight: 500,
@@ -318,7 +318,7 @@ export default function InputPanel({
                     transition: "all 0.15s",
                     display: "flex", alignItems: "center", gap: 6,
                     opacity: isDisabled ? 0.5 : 1,
-                    minHeight: 36, whiteSpace: "nowrap",
+                    minHeight: 44, whiteSpace: "nowrap",
                     touchAction: "manipulation",
                     flexShrink: 0,
                   }}

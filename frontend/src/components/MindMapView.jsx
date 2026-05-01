@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { useIsMobile } from "../hooks/useIsMobile.js";
 
 const BRANCH_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
@@ -82,6 +83,7 @@ function buildLayout(mindmap) {
 export default function MindMapView({ result }) {
   const mindmap = result?.mindmap;
   const [hovered, setHovered] = useState(null);
+  const { isMobile } = useIsMobile();
 
   if (!mindmap?.branches?.length) {
     return (
@@ -102,11 +104,14 @@ export default function MindMapView({ result }) {
         background: "var(--bg-secondary)",
         borderRadius: 12,
         border: "1px solid var(--border)",
-        overflow: "hidden",
+        overflowX: isMobile ? "auto" : "hidden",
+        overflowY: "hidden",
+        WebkitOverflowScrolling: "touch",
       }}>
+        <div style={{ minWidth: isMobile ? 720 : "auto" }}>
         <svg
           viewBox={`0 0 ${W} ${H}`}
-          style={{ width: "100%", display: "block", maxHeight: 480 }}
+          style={{ width: "100%", display: "block", maxHeight: isMobile ? 400 : 480 }}
           aria-label="Mind map visualization"
         >
           {/* Connection lines — use <path> so framer-motion pathLength works */}
@@ -163,7 +168,13 @@ export default function MindMapView({ result }) {
             );
           })}
         </svg>
+        </div>
       </div>
+      {isMobile && (
+        <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginTop: 6 }}>
+          ← Scroll to explore →
+        </div>
+      )}
 
       {/* Legend */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>

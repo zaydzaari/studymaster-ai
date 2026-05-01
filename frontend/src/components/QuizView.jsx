@@ -382,7 +382,7 @@ export default function QuizView({ result, onComplete, addToast, demoControl, on
             <button
               onClick={handleHint} disabled={hintUsed}
               style={{
-                padding: "10px 16px", background: "var(--bg-secondary)",
+                padding: "10px 16px", minHeight: 44, background: "var(--bg-secondary)",
                 border: "1px solid var(--border)", borderRadius: 8,
                 cursor: hintUsed ? "not-allowed" : "pointer", fontSize: 13,
                 color: hintUsed ? "var(--text-muted)" : "var(--text-secondary)",
@@ -394,7 +394,7 @@ export default function QuizView({ result, onComplete, addToast, demoControl, on
             <button
               onClick={() => handleSubmit()} disabled={selected === null}
               style={{
-                flex: 1, padding: "10px 16px",
+                flex: 1, padding: "10px 16px", minHeight: 44,
                 background: selected !== null ? "var(--accent)" : "var(--border)",
                 color: selected !== null ? "white" : "var(--text-muted)",
                 border: "none", borderRadius: 8,
@@ -409,7 +409,7 @@ export default function QuizView({ result, onComplete, addToast, demoControl, on
           <button
             onClick={handleNext}
             style={{
-              flex: 1, padding: "10px 16px",
+              flex: 1, padding: "10px 16px", minHeight: 44,
               background: "var(--accent)", color: "white",
               border: "none", borderRadius: 8, cursor: "pointer",
               fontSize: 14, fontWeight: 500,

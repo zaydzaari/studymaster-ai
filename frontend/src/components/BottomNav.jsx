@@ -49,7 +49,7 @@ export default function BottomNav({ activeTab, onTabChange, hasResult }) {
               cursor: hasResult ? "pointer" : "default",
               opacity: hasResult ? 1 : 0.35,
               color: isActive && hasResult ? "var(--accent)" : "var(--text-muted)",
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: isActive && hasResult ? 600 : 400,
               transition: "color 0.15s, opacity 0.15s",
               touchAction: "manipulation",
@@ -68,7 +68,7 @@ export default function BottomNav({ activeTab, onTabChange, hasResult }) {
               }} />
             )}
             <span style={{ fontSize: 22, lineHeight: 1 }}>{tab.icon}</span>
-            <span style={{ fontSize: 10, lineHeight: 1 }}>{t(tab.labelKey)}</span>
+            <span style={{ fontSize: 11, lineHeight: 1 }}>{t(tab.labelKey)}</span>
           </button>
         );
       })}

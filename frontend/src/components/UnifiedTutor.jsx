@@ -181,7 +181,8 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
       <div
         title="Tutor requires a persistent server — run locally with npm run dev"
         style={{
-          position: "fixed", bottom: isMobile ? 88 : 24, right: 20,
+          position: "fixed", bottom: isMobile ? 88 : 24,
+          right: "calc(20px + env(safe-area-inset-right, 0px))",
           display: "flex", alignItems: "center", gap: 8,
           padding: "10px 18px", background: "var(--bg-secondary)",
           color: "var(--text-muted)", border: "1px solid var(--border)",
@@ -214,7 +215,8 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
             whileTap={{ scale: 0.94 }}
             onClick={handleOpen}
             style={{
-              position: "fixed", bottom: isMobile ? 88 : 24, right: 20,
+              position: "fixed", bottom: isMobile ? 88 : 24,
+              right: "calc(20px + env(safe-area-inset-right, 0px))",
               display: "flex", alignItems: "center", gap: 8,
               padding: "10px 18px", background: "var(--accent)", color: "#fff",
               border: "none", borderRadius: 999, fontSize: 14, fontWeight: 600,
@@ -302,7 +304,9 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
             </div>
 
             <div style={{
-              padding: "12px 20px 18px", borderTop: "1px solid var(--border)", flexShrink: 0,
+              padding: "12px 20px",
+              paddingBottom: "calc(18px + env(safe-area-inset-bottom, 0px))",
+              borderTop: "1px solid var(--border)", flexShrink: 0,
               display: "flex", alignItems: "flex-end", gap: 10,
             }}>
               <textarea
@@ -336,7 +340,7 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
                 onClick={handleSendText}
                 disabled={!textInput.trim() || sending}
                 style={{
-                  width: 40, height: 40,
+                  width: 44, height: 44,
                   background: textInput.trim() && !sending ? "var(--accent)" : "var(--border)",
                   border: "none", borderRadius: 10,
                   cursor: textInput.trim() && !sending ? "pointer" : "not-allowed",
