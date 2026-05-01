@@ -30,6 +30,16 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
   const inputRef = useRef(null);
   const abortRef = useRef(null);
 
+  // Reset conversation when a new study result is loaded
+  const prevResultTitleRef = useRef(null);
+  useEffect(() => {
+    const title = result?.meta?.title || null;
+    if (title && title !== prevResultTitleRef.current) {
+      prevResultTitleRef.current = title;
+      setSseMessages([]);
+    }
+  }, [result?.meta?.title]);
+
   const mergedMessages = [...transcript, ...sseMessages].sort((a, b) => (a.ts || 0) - (b.ts || 0));
 
   React.useEffect(() => { onVoiceDebug?.(voiceDebug); }, [voiceDebug, onVoiceDebug]);
@@ -59,11 +69,18 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
 
   const handleClose = useCallback(() => {
     abortRef.current?.abort();
+    // Save any voice transcript messages to sseMessages before disconnecting
+    setSseMessages(prev => {
+      if (transcript.length === 0) return prev;
+      const existingTs = new Set(prev.map(m => m.ts));
+      const toAdd = transcript.filter(m => !existingTs.has(m.ts));
+      return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+    });
     voiceClose();
     setIsOpen(false);
     setTextInput("");
-    setSseMessages([]);
-  }, [voiceClose]);
+    // Intentionally NOT clearing sseMessages — conversation persists across open/close
+  }, [voiceClose, transcript]);
 
   const handleSendText = useCallback(async () => {
     const msg = textInput.trim();
@@ -89,11 +106,16 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Build full conversation history for context-aware replies
+    const chatHistory = sseMessages
+      .filter(m => m.final !== false)
+      .map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.text }));
+
     try {
       const res = await fetch(`${BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [{ role: "user", content: msg }], context }),
+        body: JSON.stringify({ messages: [...chatHistory, { role: "user", content: msg }], context }),
         signal: controller.signal,
       });
 
@@ -143,7 +165,7 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
     } finally {
       setSending(false);
     }
-  }, [textInput, sending, status, sendText, context]);
+  }, [textInput, sending, status, sendText, context, sseMessages]);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {

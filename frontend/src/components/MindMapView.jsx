@@ -24,7 +24,7 @@ function wrapText(label, maxChars) {
   return lines.slice(0, 2);
 }
 
-function NodeLabel({ lines, fontSize, fill, r }) {
+function NodeLabel({ lines, fontSize, fill }) {
   const lineH = fontSize * 1.25;
   const totalH = lines.length * lineH;
   return lines.map((line, i) => (
@@ -49,7 +49,6 @@ function buildLayout(mindmap) {
   const nodes = [];
   const links = [];
 
-  // Center
   nodes.push({ id: "root", x: CX, y: CY, label: mindmap.label, type: "root", color: "#1D4ED8" });
 
   branches.forEach((branch, bi) => {
@@ -108,21 +107,22 @@ export default function MindMapView({ result }) {
           style={{ width: "100%", display: "block", maxHeight: 480 }}
           aria-label="Mind map visualization"
         >
-          {/* Connection lines */}
+          {/* Connection lines — use <path> so framer-motion pathLength works */}
           {links.map((l, i) => (
-            <motion.line
+            <motion.path
               key={i}
-              x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              d={`M ${l.x1} ${l.y1} L ${l.x2} ${l.y2}`}
               stroke={l.color}
               strokeWidth={l.width}
               strokeOpacity={l.opacity}
+              fill="none"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.1 + i * 0.04 }}
             />
           ))}
 
-          {/* Nodes */}
+          {/* Nodes — outer <g> handles position, inner motion.g handles scale animation */}
           {nodes.map((node) => {
             const isRoot = node.type === "root";
             const isBranch = node.type === "branch";
@@ -132,35 +132,32 @@ export default function MindMapView({ result }) {
             const lines = wrapText(node.label, isRoot ? 11 : isBranch ? 9 : 8);
 
             return (
-              <motion.g
-                key={node.id}
-                transform={`translate(${node.x},${node.y})`}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.2 }}
-                onMouseEnter={() => setHovered(node.id)}
-                onMouseLeave={() => setHovered(null)}
-                style={{ cursor: "default" }}
-              >
-                {/* Glow ring on hover */}
-                {isHovered && (
-                  <circle r={r + 6} fill={node.color} fillOpacity={0.12} />
-                )}
-                {/* Main circle */}
-                <circle
-                  r={r}
-                  fill={isRoot ? node.color : "var(--bg-card)"}
-                  stroke={node.color}
-                  strokeWidth={isRoot ? 0 : 2}
-                  fillOpacity={isRoot ? 1 : 0.08}
-                />
-                <NodeLabel
-                  lines={lines}
-                  fontSize={fontSize}
-                  fill={isRoot ? "#ffffff" : node.color}
-                  r={r}
-                />
-              </motion.g>
+              <g key={node.id} transform={`translate(${node.x},${node.y})`}>
+                <motion.g
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.2 }}
+                  onMouseEnter={() => setHovered(node.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  style={{ cursor: "default", transformOrigin: "0px 0px" }}
+                >
+                  {isHovered && (
+                    <circle r={r + 6} fill={node.color} fillOpacity={0.12} />
+                  )}
+                  <circle
+                    r={r}
+                    fill={isRoot ? node.color : "var(--bg-card)"}
+                    stroke={node.color}
+                    strokeWidth={isRoot ? 0 : 2}
+                    fillOpacity={isRoot ? 1 : 0.08}
+                  />
+                  <NodeLabel
+                    lines={lines}
+                    fontSize={fontSize}
+                    fill={isRoot ? "#ffffff" : node.color}
+                  />
+                </motion.g>
+              </g>
             );
           })}
         </svg>

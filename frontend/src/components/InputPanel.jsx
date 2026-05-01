@@ -1,10 +1,6 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import PDFUpload from "./PDFUpload.jsx";
-import URLInput from "./URLInput.jsx";
-import ImageUpload from "./ImageUpload.jsx";
-import MultiUpload from "./MultiUpload.jsx";
 import { getReadingTime } from "../utils/readingTime.js";
 import { useIsMobile } from "../hooks/useIsMobile.js";
 
@@ -17,84 +13,155 @@ function detectLangSimple(text) {
   return "en";
 }
 
+function isValidURL(str) {
+  return /^https?:\/\/\S+$/.test(str) && !str.includes("\n");
+}
+
+const MAX_FILES = 5;
+
 export default function InputPanel({
-  inputText, setInputText, inputType, setInputType,
+  inputText, setInputText,
   onSubmitText, onSubmitPDF, onSubmitURL, onSubmitImage, onSubmitMerge,
   streaming, history, onRemoveHistory, lang, submitRef,
 }) {
   const { t } = useTranslation();
   const { isMobile } = useIsMobile();
-  const [activeTab, setActiveTab] = useState(0);
-  const [pdfFile, setPdfFile] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
-  const [mergeFiles, setMergeFiles] = useState(null);
-  const [urlValue, setUrlValue] = useState("");
-  const [detectedLang, setDetectedLang] = useState(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState([]);
   const [outputLang, setOutputLang] = useState(lang || "");
+  const [detectedLang, setDetectedLang] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [attachError, setAttachError] = useState("");
+  const fileInputRef = useRef(null);
+  const dragCounterRef = useRef(0);
 
-  useEffect(() => {
-    setOutputLang(lang || "");
-  }, [lang]);
-
-  useEffect(() => {
-    if (inputText.length > 200) {
-      setDetectedLang(detectLangSimple(inputText));
-    } else {
-      setDetectedLang(null);
-    }
-  }, [inputText]);
+  useEffect(() => { setOutputLang(lang || ""); }, [lang]);
 
   useEffect(() => {
     if (streaming) setIsCollapsed(true);
   }, [streaming]);
 
+  useEffect(() => {
+    if (inputText.length > 200) setDetectedLang(detectLangSimple(inputText));
+    else setDetectedLang(null);
+  }, [inputText]);
+
   const readingTime = inputText ? getReadingTime(inputText) : 0;
   const charCount = inputText.length;
   const tooShort = charCount > 0 && charCount < 100;
   const tooLong = charCount > 50000;
+  const urlDetected = isValidURL(inputText.trim());
 
-  const handleSubmit = useCallback(async () => {
-    if (streaming) return;
-    if (activeTab === 0) {
-      await onSubmitText(inputText, outputLang);
-    } else if (activeTab === 1) {
-      await onSubmitPDF(pdfFile, outputLang);
-    } else if (activeTab === 2) {
-      await onSubmitURL(urlValue, outputLang);
-    } else if (activeTab === 3) {
-      await onSubmitImage(imageFile, outputLang);
-    } else {
-      await onSubmitMerge(mergeFiles, outputLang);
-    }
-  }, [streaming, activeTab, inputText, pdfFile, urlValue, imageFile, mergeFiles, outputLang, onSubmitText, onSubmitPDF, onSubmitURL, onSubmitImage, onSubmitMerge]);
+  // Determine what the submit will do based on current state
+  const submitMode = (() => {
+    if (attachedFiles.length > 1) return "merge";
+    if (attachedFiles.length === 1) return attachedFiles[0].kind === "image" ? "image" : "pdf";
+    if (urlDetected) return "url";
+    return "text";
+  })();
 
-  const tabLabel = [
-    t("input.tabs.text"),
-    t("input.tabs.pdf"),
-    t("input.tabs.url"),
-    t("input.tabs.image") || "Image",
-    t("input.tabs.merge") || "Multi-Doc",
-  ];
+  const modeLabel = {
+    text: "✍️ Text",
+    url: "🌐 URL",
+    pdf: "📄 PDF",
+    image: "🖼️ Image",
+    merge: `📎 ${attachedFiles.length} files`,
+  }[submitMode];
 
   const isDisabled = streaming
-    || (activeTab === 0 && !inputText.trim())
-    || (activeTab === 1 && !pdfFile)
-    || (activeTab === 2 && !urlValue.trim())
-    || (activeTab === 3 && !imageFile)
-    || (activeTab === 4 && !mergeFiles);
+    || (submitMode === "text" && !inputText.trim())
+    || (submitMode === "url" && !inputText.trim())
+    || (submitMode === "pdf" && !attachedFiles.length)
+    || (submitMode === "image" && !attachedFiles.length)
+    || (submitMode === "merge" && attachedFiles.length < 2);
+
+  const handleSubmit = useCallback(async () => {
+    if (streaming || isDisabled) return;
+    setAttachError("");
+    if (submitMode === "merge") {
+      await onSubmitMerge(attachedFiles.map(f => f.file), outputLang);
+    } else if (submitMode === "pdf") {
+      await onSubmitPDF(attachedFiles[0].file, outputLang);
+    } else if (submitMode === "image") {
+      await onSubmitImage(attachedFiles[0].file, outputLang);
+    } else if (submitMode === "url") {
+      await onSubmitURL(inputText.trim(), outputLang);
+    } else {
+      await onSubmitText(inputText, outputLang);
+    }
+  }, [streaming, isDisabled, submitMode, attachedFiles, inputText, outputLang,
+      onSubmitMerge, onSubmitPDF, onSubmitImage, onSubmitURL, onSubmitText]);
+
+  const attachFile = useCallback((file) => {
+    const isPDF = file.type === "application/pdf";
+    const isImage = file.type.startsWith("image/");
+    if (!isPDF && !isImage) {
+      setAttachError("Only PDF and image files accepted.");
+      return;
+    }
+    const maxBytes = (isPDF ? 50 : 20) * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setAttachError(`File too large (max ${isPDF ? "50" : "20"}MB)`);
+      return;
+    }
+    setAttachedFiles(prev => {
+      if (prev.length >= MAX_FILES) { setAttachError("Maximum 5 files"); return prev; }
+      const kind = isPDF ? "pdf" : "image";
+      const preview = isImage ? URL.createObjectURL(file) : null;
+      return [...prev, { file, kind, preview, id: Date.now() + Math.random() }];
+    });
+    setAttachError("");
+  }, []);
+
+  const removeFile = useCallback((id) => {
+    setAttachedFiles(prev => {
+      const removed = prev.find(f => f.id === id);
+      if (removed?.preview) URL.revokeObjectURL(removed.preview);
+      return prev.filter(f => f.id !== id);
+    });
+  }, []);
+
+  const handleFileInput = (e) => {
+    Array.from(e.target.files).forEach(attachFile);
+    e.target.value = "";
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    dragCounterRef.current++;
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    dragCounterRef.current--;
+    if (dragCounterRef.current <= 0) { dragCounterRef.current = 0; setIsDragging(false); }
+  };
+  const handleDragOver = (e) => { e.preventDefault(); };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+    Array.from(e.dataTransfer.files).forEach(attachFile);
+  };
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const f = item.getAsFile();
+        if (f) attachFile(f);
+      }
+    }
+  };
 
   const panelStyle = {
     background: "var(--bg-secondary)",
     border: "1px solid var(--border)",
     borderRadius: isMobile ? 0 : 12,
     padding: isMobile ? "12px 12px 0" : 24,
-    ...(isMobile && {
-      borderLeft: "none",
-      borderRight: "none",
-      borderTop: "none",
-    }),
+    ...(isMobile && { borderLeft: "none", borderRight: "none", borderTop: "none" }),
   };
 
   return (
@@ -104,31 +171,14 @@ export default function InputPanel({
         <button
           onClick={() => setIsCollapsed(c => !c)}
           style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "4px 0 12px",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "var(--text-secondary)",
-            fontSize: 13,
-            fontWeight: 500,
+            width: "100%", display: "flex", alignItems: "center",
+            justifyContent: "space-between", padding: "4px 0 12px",
+            background: "none", border: "none", cursor: "pointer",
+            color: "var(--text-secondary)", fontSize: 13, fontWeight: 500,
           }}
         >
-          <span>
-            {isCollapsed
-              ? "✏️ Tap to add content"
-              : "📖 Add Content"}
-          </span>
-          <span style={{
-            fontSize: 16,
-            transition: "transform 0.25s",
-            transform: isCollapsed ? "rotate(0deg)" : "rotate(180deg)",
-          }}>
-            ▾
-          </span>
+          <span>{isCollapsed ? "✏️ Tap to add content" : "📖 Add Content"}</span>
+          <span style={{ fontSize: 16, transition: "transform 0.25s", transform: isCollapsed ? "rotate(0deg)" : "rotate(180deg)" }}>▾</span>
         </button>
       )}
 
@@ -142,191 +192,168 @@ export default function InputPanel({
             transition={{ duration: 0.22, ease: "easeInOut" }}
             style={{ overflow: "hidden" }}
           >
-            {/* Tabs */}
-            <div style={{
-              display: "flex",
-              borderBottom: "1px solid var(--border)",
-              marginBottom: 16,
-              overflowX: "auto",
-            }}>
-              {tabLabel.map((label, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveTab(i)}
-                  style={{
-                    padding: isMobile ? "12px 14px" : "10px 16px",
-                    border: "none",
-                    background: "transparent",
-                    color: activeTab === i ? "var(--accent)" : "var(--text-secondary)",
-                    borderBottom: activeTab === i ? "2px solid var(--accent)" : "2px solid transparent",
-                    fontSize: 14,
-                    fontWeight: activeTab === i ? 500 : 400,
-                    cursor: "pointer",
-                    transition: "color 0.15s",
-                    marginBottom: -1,
-                    whiteSpace: "nowrap",
-                    touchAction: "manipulation",
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {/* Text input */}
-            {activeTab === 0 && (
-              <div>
-                <textarea
-                  value={inputText}
-                  onChange={e => setInputText(e.target.value)}
-                  placeholder={t("input.placeholder")}
-                  style={{
-                    width: "100%",
-                    minHeight: isMobile ? 140 : 200,
-                    resize: "vertical",
-                    padding: "12px",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    fontSize: 16,
-                    lineHeight: 1.6,
-                    background: "var(--bg-card)",
-                    color: "var(--text-primary)",
-                    fontFamily: "inherit",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                  onFocus={e => {
-                    e.target.style.borderColor = "var(--accent)";
-                    e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)";
-                  }}
-                  onBlur={e => {
-                    e.target.style.borderColor = "var(--border)";
-                    e.target.style.boxShadow = "none";
-                  }}
-                />
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginTop: 8,
-                  fontSize: 12,
-                  color: "var(--text-muted)",
-                  flexWrap: "wrap",
-                  gap: 4,
-                }}>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {tooShort && (
-                      <span style={{ color: "var(--warning)" }}>
-                        ⚠ {t("input.qualityShort")}
-                      </span>
-                    )}
-                    {tooLong && (
-                      <span style={{ color: "var(--warning)" }}>
-                        {t("input.qualityLong")}
-                      </span>
-                    )}
-                    {detectedLang && (
-                      <span style={{ color: "var(--accent)" }}>
-                        🌍 {t("input.detected", { lang: detectedLang === "ar" ? "Arabic" : detectedLang === "fr" ? "French" : "English" })}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {readingTime > 0 && (
-                      <span>{t("input.readingTime", { min: readingTime })}</span>
-                    )}
-                    <span className="mono">{charCount.toLocaleString()} chars</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 1 && (
-              <PDFUpload onFile={setPdfFile} />
-            )}
-
-            {activeTab === 2 && (
-              <URLInput value={urlValue} onChange={setUrlValue} />
-            )}
-
-            {activeTab === 3 && (
-              <ImageUpload onFile={setImageFile} />
-            )}
-
-            {activeTab === 4 && (
-              <MultiUpload onFiles={setMergeFiles} />
-            )}
-
-            {/* Submit */}
-            <div style={{ marginTop: 12, paddingBottom: isMobile ? 12 : 0 }}>
-              <button
-                data-demo-id="submit-btn"
-                ref={submitRef}
-                onClick={handleSubmit}
-                disabled={isDisabled}
+            {/* Unified input container */}
+            <div
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              style={{
+                border: `2px solid ${isDragging ? "var(--accent)" : "var(--border)"}`,
+                borderRadius: 10,
+                background: isDragging ? "rgba(37,99,235,0.04)" : "var(--bg-card)",
+                transition: "border-color 0.15s, background 0.15s",
+                overflow: "hidden",
+              }}
+            >
+              {/* Textarea */}
+              <textarea
+                value={inputText}
+                onChange={e => setInputText(e.target.value)}
+                onPaste={handlePaste}
+                placeholder={
+                  isDragging
+                    ? "Drop your file here..."
+                    : "Paste text, drop a PDF/image, or type a URL..."
+                }
                 style={{
                   width: "100%",
-                  padding: "14px 24px",
-                  background: streaming ? "var(--border)" : "var(--accent)",
-                  color: streaming ? "var(--text-muted)" : "white",
+                  minHeight: isMobile ? 100 : 160,
+                  resize: "vertical",
+                  padding: "14px",
                   border: "none",
-                  borderRadius: 8,
                   fontSize: 15,
-                  fontWeight: 500,
-                  cursor: streaming ? "not-allowed" : "pointer",
-                  transition: "all 0.15s",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  opacity: isDisabled ? 0.5 : 1,
-                  minHeight: 48,
-                  touchAction: "manipulation",
+                  lineHeight: 1.6,
+                  background: "transparent",
+                  color: "var(--text-primary)",
+                  fontFamily: "inherit",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  display: "block",
                 }}
-                onMouseEnter={e => {
-                  if (!streaming) {
-                    e.currentTarget.style.background = "var(--accent-hover)";
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!streaming) {
-                    e.currentTarget.style.background = "var(--accent)";
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }
-                }}
-              >
-                {streaming ? (
-                  <>
-                    <Spinner />
-                    {t("input.submitting")}
-                  </>
-                ) : (
-                  <>
-                    ✨ {t("input.submit")}
-                    {!isMobile && (
-                      <span style={{ fontSize: 11, opacity: 0.7, fontFamily: "'Geist Mono', monospace" }}>
-                        Ctrl ↵
-                      </span>
-                    )}
-                  </>
-                )}
-              </button>
+              />
+
+              {/* Attached file chips */}
+              {attachedFiles.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 12px 10px" }}>
+                  {attachedFiles.map(af => (
+                    <FileChip key={af.id} af={af} onRemove={() => removeFile(af.id)} />
+                  ))}
+                </div>
+              )}
+
+              {/* Bottom toolbar */}
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "10px 12px 12px",
+                borderTop: "1px solid var(--border)",
+                flexWrap: "wrap",
+              }}>
+                {/* Attach button */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Attach PDF or image (or drag & drop)"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "6px 11px", background: "var(--bg-secondary)",
+                    border: "1px solid var(--border)", borderRadius: 7,
+                    fontSize: 13, color: "var(--text-secondary)",
+                    cursor: "pointer", fontWeight: 500,
+                    transition: "border-color 0.15s, color 0.15s",
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+                >
+                  <PaperclipIcon />
+                  {!isMobile && "Attach"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,image/*"
+                  onChange={handleFileInput}
+                  style={{ display: "none" }}
+                />
+
+                {/* Mode badge */}
+                <span style={{
+                  fontSize: 11, padding: "4px 9px",
+                  background: "var(--bg-secondary)", border: "1px solid var(--border)",
+                  borderRadius: 99, color: "var(--text-muted)", fontWeight: 500,
+                  flexShrink: 0,
+                }}>
+                  {modeLabel}
+                </span>
+
+                <div style={{ flex: 1 }} />
+
+                {/* Hints */}
+                <div style={{ display: "flex", gap: 6, fontSize: 11, color: "var(--text-muted)", alignItems: "center" }}>
+                  {tooShort && <span style={{ color: "var(--warning)" }}>⚠ Too short</span>}
+                  {tooLong && <span style={{ color: "var(--warning)" }}>Truncated</span>}
+                  {detectedLang && (
+                    <span style={{ color: "var(--accent)" }}>
+                      🌍 {detectedLang === "ar" ? "AR" : detectedLang === "fr" ? "FR" : "EN"}
+                    </span>
+                  )}
+                  {readingTime > 0 && !isMobile && <span>{readingTime}m read</span>}
+                  {charCount > 0 && <span className="mono">{charCount.toLocaleString()}</span>}
+                </div>
+
+                {/* Submit */}
+                <button
+                  data-demo-id="submit-btn"
+                  ref={submitRef}
+                  onClick={handleSubmit}
+                  disabled={isDisabled}
+                  style={{
+                    padding: "8px 18px",
+                    background: streaming ? "var(--border)" : "var(--accent)",
+                    color: streaming ? "var(--text-muted)" : "white",
+                    border: "none", borderRadius: 8,
+                    fontSize: 14, fontWeight: 600,
+                    cursor: isDisabled ? "not-allowed" : "pointer",
+                    transition: "all 0.15s",
+                    display: "flex", alignItems: "center", gap: 6,
+                    opacity: isDisabled ? 0.5 : 1,
+                    minHeight: 36, whiteSpace: "nowrap",
+                    touchAction: "manipulation",
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={e => { if (!isDisabled) e.currentTarget.style.filter = "brightness(1.1)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.filter = "none"; }}
+                >
+                  {streaming ? (
+                    <><Spinner /> {t("input.submitting")}</>
+                  ) : (
+                    <>
+                      ✨ {t("input.submit")}
+                      {!isMobile && (
+                        <span style={{ fontSize: 11, opacity: 0.65, fontFamily: "'Geist Mono', monospace" }}>
+                          Ctrl↵
+                        </span>
+                      )}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+
+            {/* Attach error */}
+            {attachError && (
+              <div style={{ fontSize: 12, color: "var(--error, #DC2626)", marginTop: 4, padding: "0 4px" }}>
+                {attachError}
+              </div>
+            )}
 
             {/* History */}
             {history.length > 0 && !isMobile && (
               <div style={{ marginTop: 12 }}>
                 <button
                   onClick={() => setShowHistory(h => !h)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--text-secondary)",
-                    fontSize: 12,
-                    cursor: "pointer",
-                    padding: 0,
-                  }}
+                  style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: 12, cursor: "pointer", padding: 0 }}
                 >
                   {t("input.history")} {showHistory ? "▲" : "▼"}
                 </button>
@@ -339,37 +366,21 @@ export default function InputPanel({
                       style={{ overflow: "hidden", marginTop: 8 }}
                     >
                       {history.map(item => (
-                        <div
-                          key={item.id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            padding: "6px 8px",
-                            borderRadius: 6,
-                            background: "var(--bg-card)",
-                            border: "1px solid var(--border)",
-                            marginBottom: 4,
-                          }}
-                        >
+                        <div key={item.id} style={{
+                          display: "flex", alignItems: "center", gap: 8,
+                          padding: "6px 8px", borderRadius: 6,
+                          background: "var(--bg-card)", border: "1px solid var(--border)", marginBottom: 4,
+                        }}>
                           <span style={{ fontSize: 14 }}>
                             {item.type === "pdf" ? "📄" : item.type === "url" ? "🌐" : item.type === "image" ? "🖼️" : "📝"}
                           </span>
                           <span
                             style={{
-                              flex: 1, fontSize: 12,
-                              color: "var(--text-secondary)",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              cursor: "pointer",
+                              flex: 1, fontSize: 12, color: "var(--text-secondary)",
+                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                              cursor: item.type === "text" ? "pointer" : "default",
                             }}
-                            onClick={() => {
-                              if (item.type === "text") {
-                                setInputText(item.content);
-                                setActiveTab(0);
-                              }
-                            }}
+                            onClick={() => { if (item.type === "text") setInputText(item.content); }}
                           >
                             {item.content}
                           </span>
@@ -378,14 +389,8 @@ export default function InputPanel({
                           </span>
                           <button
                             onClick={() => onRemoveHistory(item.id)}
-                            style={{
-                              background: "none", border: "none",
-                              color: "var(--text-muted)", cursor: "pointer",
-                              padding: "0 4px", fontSize: 14, lineHeight: 1,
-                            }}
-                          >
-                            ×
-                          </button>
+                            style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "0 4px", fontSize: 14, lineHeight: 1 }}
+                          >×</button>
                         </div>
                       ))}
                     </motion.div>
@@ -397,6 +402,37 @@ export default function InputPanel({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function FileChip({ af, onRemove }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 5,
+      padding: "4px 8px 4px 6px",
+      background: "var(--bg-secondary)", border: "1px solid var(--border)",
+      borderRadius: 6, fontSize: 12, color: "var(--text-secondary)", maxWidth: 200,
+    }}>
+      {af.kind === "image" && af.preview
+        ? <img src={af.preview} alt="" style={{ width: 18, height: 18, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
+        : <span style={{ flexShrink: 0 }}>{af.kind === "pdf" ? "📄" : "🖼️"}</span>
+      }
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+        {af.file.name}
+      </span>
+      <button
+        onClick={onRemove}
+        style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 0, fontSize: 15, lineHeight: 1, flexShrink: 0 }}
+      >×</button>
+    </div>
+  );
+}
+
+function PaperclipIcon() {
+  return (
+    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
   );
 }
 
