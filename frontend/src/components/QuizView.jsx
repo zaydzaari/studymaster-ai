@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import ReactConfetti from "react-confetti";
 import { useKeyboard } from "../hooks/useKeyboard.js";
 
-export default function QuizView({ result, onComplete, addToast, demoControl }) {
+export default function QuizView({ result, onComplete, addToast, demoControl, onGenerateMore, generatingMore }) {
   const { t } = useTranslation();
   const questions = result.quiz || [];
   const [localQIndex, setLocalQIndex] = useState(0);
@@ -19,7 +19,6 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
   const [timeLeft, setTimeLeft] = useState(30);
   const [timerActive, setTimerActive] = useState(false);
 
-  // When demoControl.quiz is set, use external state
   const dc = demoControl?.quiz;
   const qIndex    = dc ? dc.qIndex    : localQIndex;
   const selected  = dc ? dc.selected  : localSelected;
@@ -34,22 +33,15 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
 
   const q = questions[qIndex];
 
-  // Timer
   useEffect(() => {
     if (!timePressure || !timerActive || submitted || done) return;
-    if (timeLeft <= 0) {
-      handleSubmit(true);
-      return;
-    }
+    if (timeLeft <= 0) { handleSubmit(true); return; }
     const id = setTimeout(() => setTimeLeft(t => t - 1), 1000);
     return () => clearTimeout(id);
   }, [timePressure, timerActive, timeLeft, submitted, done]);
 
   useEffect(() => {
-    if (timePressure) {
-      setTimeLeft(30);
-      setTimerActive(true);
-    }
+    if (timePressure) { setTimeLeft(30); setTimerActive(true); }
   }, [qIndex, timePressure]);
 
   const handleSubmit = useCallback((autoSubmit = false) => {
@@ -84,23 +76,15 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
 
   const handleHint = () => {
     if (hintUsed || submitted) return;
-    const wrong = q.options
-      .map((_, i) => i)
-      .filter(i => i !== q.correctAnswer && i !== selected);
-    const toElim = wrong.slice(0, 2);
-    setEliminated(toElim);
+    const wrong = q.options.map((_, i) => i).filter(i => i !== q.correctAnswer && i !== selected);
+    setEliminated(wrong.slice(0, 2));
     setHintUsed(true);
   };
 
   const reset = () => {
-    setQIndex(0);
-    setSelected(null);
-    setSubmitted(false);
-    setAnswers([]);
-    setDone(false);
-    setHintUsed(false);
-    setEliminated([]);
-    setTimeLeft(30);
+    setQIndex(0); setSelected(null); setSubmitted(false);
+    setAnswers([]); setDone(false); setHintUsed(false);
+    setEliminated([]); setTimeLeft(30);
   };
 
   useKeyboard([
@@ -128,39 +112,30 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
       <div>
         {showConfetti && (
           <ReactConfetti
-            numberOfPieces={200}
-            recycle={false}
-            colors={["#2563EB", "#F59E0B", "#FFFFFF", "#10B981"]}
+            numberOfPieces={200} recycle={false}
+            colors={["#4F46E5", "#F59E0B", "#FFFFFF", "#10B981"]}
             style={{ position: "fixed", top: 0, left: 0, zIndex: 9999 }}
           />
         )}
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
           style={{ textAlign: "center", padding: "40px 20px" }}
         >
-          {/* Score circle */}
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
+            initial={{ scale: 0 }} animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
             style={{
-              width: 100,
-              height: 100,
-              borderRadius: "50%",
+              width: 100, height: 100, borderRadius: "50%",
               background: perfect ? "linear-gradient(135deg, #F59E0B, #FCD34D)" : "var(--accent-light)",
               border: `4px solid ${perfect ? "#F59E0B" : "var(--accent)"}`,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
               margin: "0 auto 20px",
             }}
           >
             <div style={{
-              fontSize: 28,
-              fontWeight: 700,
+              fontSize: 28, fontWeight: 700,
               color: perfect ? "#92400E" : "var(--accent)",
               fontFamily: "'Geist Mono', monospace",
             }}>
@@ -173,45 +148,47 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
           </div>
 
           {perfect && (
-            <div style={{
-              color: "#D97706",
-              fontWeight: 500,
-              marginBottom: 16,
-              fontSize: 15,
-            }}>
-              🏆 {t("quiz.perfect")}
+            <div style={{ color: "#D97706", fontWeight: 500, marginBottom: 16, fontSize: 15 }}>
+              {t("quiz.perfect")}
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 24 }}>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 24, flexWrap: "wrap" }}>
             <button
               onClick={reset}
               style={{
-                padding: "10px 20px",
-                background: "var(--accent)",
-                color: "white",
-                border: "none",
-                borderRadius: 8,
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: 500,
+                padding: "10px 20px", background: "var(--accent)", color: "white",
+                border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500,
               }}
             >
               Try Again
             </button>
+            {onGenerateMore && (
+              <button
+                onClick={onGenerateMore}
+                disabled={generatingMore}
+                style={{
+                  padding: "10px 20px",
+                  background: generatingMore ? "var(--bg-secondary)" : "var(--accent-light)",
+                  border: `1px solid ${generatingMore ? "var(--border)" : "rgba(79,70,229,0.3)"}`,
+                  borderRadius: 8, cursor: generatingMore ? "wait" : "pointer",
+                  fontSize: 14, fontWeight: 500,
+                  color: generatingMore ? "var(--text-muted)" : "var(--accent)",
+                  transition: "all 0.2s",
+                }}
+              >
+                {generatingMore ? "Generating..." : "+ 5 New Questions"}
+              </button>
+            )}
             {perfect && (
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText("I just scored 100% on my StudyMaster AI quiz! 📚");
+                  navigator.clipboard.writeText("I just scored 100% on my StudyMaster AI quiz!");
                   addToast?.("Copied to clipboard!", "success");
                 }}
                 style={{
-                  padding: "10px 20px",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontSize: 14,
+                  padding: "10px 20px", background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 14,
                 }}
               >
                 {t("quiz.shareResult")}
@@ -219,39 +196,34 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
             )}
           </div>
 
-          {/* Wrong answers review */}
           {answers.some(a => !a.correct) && (
             <div style={{ textAlign: "left", marginTop: 24 }}>
               <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12, color: "var(--text-primary)" }}>
                 {t("quiz.reviewMistakes")}
               </div>
-              {answers
-                .filter(a => !a.correct)
-                .map((a, i) => {
-                  const qq = questions[a.qIndex];
-                  return (
-                    <div key={i} style={{
-                      padding: 16,
-                      background: "var(--error-light)",
-                      border: "1px solid rgba(220,38,38,0.2)",
-                      borderRadius: 8,
-                      marginBottom: 10,
-                    }}>
-                      <div style={{ fontWeight: 500, marginBottom: 8, fontSize: 14 }}>{qq.question}</div>
-                      {a.selected >= 0 && (
-                        <div style={{ fontSize: 13, color: "var(--error)", marginBottom: 4 }}>
-                          ✕ Your answer: {qq.options[a.selected]}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 13, color: "var(--success)", marginBottom: 8 }}>
-                        ✓ Correct: {qq.options[qq.correctAnswer]}
+              {answers.filter(a => !a.correct).map((a, i) => {
+                const qq = questions[a.qIndex];
+                return (
+                  <div key={i} style={{
+                    padding: 16, background: "var(--error-light)",
+                    border: "1px solid rgba(220,38,38,0.2)",
+                    borderRadius: 8, marginBottom: 10,
+                  }}>
+                    <div style={{ fontWeight: 500, marginBottom: 8, fontSize: 14 }}>{qq.question}</div>
+                    {a.selected >= 0 && (
+                      <div style={{ fontSize: 13, color: "var(--error)", marginBottom: 4 }}>
+                        Your answer: {qq.options[a.selected]}
                       </div>
-                      <div style={{ fontSize: 12, color: "var(--text-secondary)", fontStyle: "italic" }}>
-                        {qq.explanation}
-                      </div>
+                    )}
+                    <div style={{ fontSize: 13, color: "var(--success)", marginBottom: 8 }}>
+                      Correct: {qq.options[qq.correctAnswer]}
                     </div>
-                  );
-                })}
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", fontStyle: "italic" }}>
+                      {qq.explanation}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </motion.div>
@@ -265,35 +237,29 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
     <div>
       {/* Header */}
       <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 20,
-        flexWrap: "wrap",
-        gap: 8,
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        marginBottom: 20, flexWrap: "wrap", gap: 8,
       }}>
         <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
           {t("quiz.question", { n: qIndex + 1, total: questions.length })}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {/* Time pressure toggle */}
           <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer", color: "var(--text-secondary)" }}>
             <input
-              type="checkbox"
-              checked={timePressure}
-              onChange={e => { setTimePressure(e.target.checked); setTimeLeft(30); setTimerActive(e.target.checked && !submitted); }}
+              type="checkbox" checked={timePressure}
+              onChange={e => {
+                setTimePressure(e.target.checked);
+                setTimeLeft(30);
+                setTimerActive(e.target.checked && !submitted);
+              }}
               style={{ cursor: "pointer" }}
             />
-            ⏱ {t("quiz.timePressure")}
+            {t("quiz.timePressure")}
           </label>
-
-          {/* Dots */}
           <div style={{ display: "flex", gap: 4 }}>
             {questions.map((_, i) => (
               <div key={i} style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
+                width: 6, height: 6, borderRadius: "50%",
                 background: i < answers.length
                   ? (answers[i]?.correct ? "var(--success)" : "var(--error)")
                   : i === qIndex ? "var(--accent)" : "var(--border)",
@@ -306,24 +272,14 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
       {/* Time pressure bar */}
       {timePressure && !submitted && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: 12,
-            color: timeLeft <= 10 ? "var(--error)" : "var(--text-muted)",
-            marginBottom: 4,
-          }}>
-            <span>{timeLeft <= 10 ? "⚠ " : ""}Time left</span>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: timeLeft <= 10 ? "var(--error)" : "var(--text-muted)", marginBottom: 4 }}>
+            <span>Time left</span>
             <span className="mono">{timeLeft}s</span>
           </div>
           <div style={{ height: 4, background: "var(--bg-secondary)", borderRadius: 999, overflow: "hidden" }}>
             <motion.div
               animate={{ width: `${(timeLeft / 30) * 100}%` }}
-              style={{
-                height: "100%",
-                background: timeLeft <= 10 ? "var(--error)" : "var(--accent)",
-                borderRadius: 999,
-              }}
+              style={{ height: "100%", background: timeLeft <= 10 ? "var(--error)" : "var(--accent)", borderRadius: 999 }}
               transition={{ duration: 1, ease: "linear" }}
             />
           </div>
@@ -339,17 +295,10 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.2 }}
         >
-          <div style={{
-            fontSize: 16,
-            fontWeight: 600,
-            color: "var(--text-primary)",
-            marginBottom: 20,
-            lineHeight: 1.5,
-          }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 20, lineHeight: 1.5 }}>
             {q.question}
           </div>
 
-          {/* Options */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
             {q.options.map((opt, i) => {
               const isElim = eliminated.includes(i);
@@ -360,86 +309,67 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
               let bg = "var(--bg-secondary)";
               let border = "1px solid var(--border)";
               let color = "var(--text-primary)";
+              let boxShadow = "none";
 
               if (!submitted && isSelected) {
                 bg = "var(--accent-light)";
                 border = "1px solid var(--accent)";
               } else if (isCorrect) {
                 bg = "var(--success-light)";
-                border = "1px solid var(--success)";
+                border = "2px solid var(--success)";
                 color = "var(--success)";
+                boxShadow = "0 0 0 3px rgba(22,163,74,0.15)";
               } else if (isWrong) {
                 bg = "var(--error-light)";
-                border = "1px solid var(--error)";
+                border = "2px solid var(--error)";
                 color = "var(--error)";
-              } else if (!submitted && !isElim) {
-                // hover handled via inline
+                boxShadow = "0 0 0 3px rgba(220,38,38,0.15)";
               }
 
               return (
                 <motion.button
                   key={i}
                   className="quiz-option"
+                  animate={{ boxShadow }}
                   whileHover={!submitted && !isElim ? { scale: 1.005 } : {}}
                   onClick={() => !submitted && !isElim && setSelected(i)}
                   style={{
-                    padding: "12px 16px",
-                    background: bg,
-                    border,
-                    borderRadius: 8,
-                    cursor: submitted || isElim ? "default" : "pointer",
-                    textAlign: "left",
-                    fontSize: 14,
-                    color,
-                    opacity: isElim ? 0.3 : 1,
-                    transition: "all 0.15s",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    width: "100%",
+                    padding: "12px 16px", background: bg, border,
+                    borderRadius: 8, cursor: submitted || isElim ? "default" : "pointer",
+                    textAlign: "left", fontSize: 14, color,
+                    opacity: isElim ? 0.3 : 1, transition: "all 0.15s",
+                    display: "flex", alignItems: "center", gap: 10, width: "100%",
                   }}
                 >
                   <span style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 6,
+                    width: 26, height: 26, borderRadius: 6,
                     background: isSelected && !submitted ? "var(--accent)" : isCorrect ? "var(--success)" : isWrong ? "var(--error)" : "var(--border)",
                     color: (isSelected && !submitted) || isCorrect || isWrong ? "white" : "var(--text-secondary)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, fontWeight: 700, flexShrink: 0,
                     fontFamily: "'Geist Mono', monospace",
+                    transition: "all 0.15s",
                   }}>
                     {String.fromCharCode(65 + i)}
                   </span>
                   <span style={{ flex: 1 }}>{opt}</span>
-                  {isCorrect && <span>✓</span>}
-                  {isWrong && <span>✕</span>}
+                  {isCorrect && <span style={{ fontWeight: 700 }}>✓</span>}
+                  {isWrong && <span style={{ fontWeight: 700 }}>✕</span>}
                 </motion.button>
               );
             })}
           </div>
 
-          {/* Explanation after submit */}
           {submitted && q.explanation && (
             <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
               style={{
-                padding: "12px 16px",
-                background: "var(--bg-secondary)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                fontSize: 13,
-                color: "var(--text-secondary)",
-                fontStyle: "italic",
-                marginBottom: 16,
+                padding: "12px 16px", background: "var(--bg-secondary)",
+                border: "1px solid var(--border)", borderRadius: 8,
+                fontSize: 13, color: "var(--text-secondary)", fontStyle: "italic", marginBottom: 16,
               }}
             >
-              💡 {q.explanation}
+              {q.explanation}
             </motion.div>
           )}
         </motion.div>
@@ -450,35 +380,26 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
         {!submitted ? (
           <>
             <button
-              onClick={handleHint}
-              disabled={hintUsed}
+              onClick={handleHint} disabled={hintUsed}
               style={{
-                padding: "10px 16px",
-                background: "var(--bg-secondary)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                cursor: hintUsed ? "not-allowed" : "pointer",
-                fontSize: 13,
+                padding: "10px 16px", background: "var(--bg-secondary)",
+                border: "1px solid var(--border)", borderRadius: 8,
+                cursor: hintUsed ? "not-allowed" : "pointer", fontSize: 13,
                 color: hintUsed ? "var(--text-muted)" : "var(--text-secondary)",
                 opacity: hintUsed ? 0.6 : 1,
               }}
             >
-              {hintUsed ? t("quiz.hintUsed") : t("quiz.hint")} 💡
+              {hintUsed ? t("quiz.hintUsed") : t("quiz.hint")}
             </button>
             <button
-              onClick={() => handleSubmit()}
-              disabled={selected === null}
+              onClick={() => handleSubmit()} disabled={selected === null}
               style={{
-                flex: 1,
-                padding: "10px 16px",
+                flex: 1, padding: "10px 16px",
                 background: selected !== null ? "var(--accent)" : "var(--border)",
                 color: selected !== null ? "white" : "var(--text-muted)",
-                border: "none",
-                borderRadius: 8,
+                border: "none", borderRadius: 8,
                 cursor: selected !== null ? "pointer" : "not-allowed",
-                fontSize: 14,
-                fontWeight: 500,
-                transition: "all 0.15s",
+                fontSize: 14, fontWeight: 500, transition: "all 0.15s",
               }}
             >
               {t("quiz.submit")}
@@ -488,15 +409,10 @@ export default function QuizView({ result, onComplete, addToast, demoControl }) 
           <button
             onClick={handleNext}
             style={{
-              flex: 1,
-              padding: "10px 16px",
-              background: "var(--accent)",
-              color: "white",
-              border: "none",
-              borderRadius: 8,
-              cursor: "pointer",
-              fontSize: 14,
-              fontWeight: 500,
+              flex: 1, padding: "10px 16px",
+              background: "var(--accent)", color: "white",
+              border: "none", borderRadius: 8, cursor: "pointer",
+              fontSize: 14, fontWeight: 500,
             }}
           >
             {qIndex < questions.length - 1 ? t("quiz.next") : t("quiz.finish")} →

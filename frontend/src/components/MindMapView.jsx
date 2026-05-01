@@ -44,12 +44,12 @@ function NodeLabel({ lines, fontSize, fill }) {
 }
 
 function buildLayout(mindmap) {
-  const branches = mindmap.children || [];
+  const branches = mindmap.branches || [];
   const n = branches.length;
   const nodes = [];
   const links = [];
 
-  nodes.push({ id: "root", x: CX, y: CY, label: mindmap.label, type: "root", color: "#1D4ED8" });
+  nodes.push({ id: "root", x: CX, y: CY, label: mindmap.center || mindmap.label || "", type: "root", color: "#4338CA" });
 
   branches.forEach((branch, bi) => {
     const angle = (bi / n) * 2 * Math.PI - Math.PI / 2;
@@ -68,8 +68,10 @@ function buildLayout(mindmap) {
       const childAngle = angle + (ci - (cn - 1) / 2) * (cn > 1 ? spread / (cn - 1) : 0);
       const cx2 = bx + LEAF_R * Math.cos(childAngle);
       const cy2 = by + LEAF_R * Math.sin(childAngle);
+      // children are plain strings in the new schema
+      const label = typeof child === "string" ? child : child.label || "";
 
-      nodes.push({ id: `b${bi}c${ci}`, x: cx2, y: cy2, label: child.label, type: "leaf", color });
+      nodes.push({ id: `b${bi}c${ci}`, x: cx2, y: cy2, label, type: "leaf", color });
       links.push({ x1: bx, y1: by, x2: cx2, y2: cy2, color, opacity: 0.25, width: 1.5 });
     });
   });
@@ -81,7 +83,7 @@ export default function MindMapView({ result }) {
   const mindmap = result?.mindmap;
   const [hovered, setHovered] = useState(null);
 
-  if (!mindmap?.children?.length) {
+  if (!mindmap?.branches?.length) {
     return (
       <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 14 }}>
         Mind map not available for this content.
@@ -165,7 +167,7 @@ export default function MindMapView({ result }) {
 
       {/* Legend */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-        {(mindmap.children || []).map((b, i) => (
+        {(mindmap.branches || []).map((b, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--text-secondary)" }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: BRANCH_COLORS[i % BRANCH_COLORS.length], flexShrink: 0 }} />
             {b.label}

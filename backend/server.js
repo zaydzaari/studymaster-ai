@@ -8,6 +8,8 @@ import summarizeRouter from './routes/summarize.js';
 import deepdiveRouter from './routes/deepdive.js';
 import ttsRouter from './routes/tts.js';
 import chatRouter from './routes/chat.js';
+import flashcardsMoreRouter from './routes/flashcardsMore.js';
+import quizMoreRouter from './routes/quizMore.js';
 import { setupVoiceWebSocket } from './routes/voice.js';
 
 const app = express();
@@ -26,6 +28,8 @@ app.use('/api/summarize', summarizeRouter);
 app.use('/api/deepdive', deepdiveRouter);
 app.use('/api/tts', ttsRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/flashcards/more', flashcardsMoreRouter);
+app.use('/api/quiz/more', quizMoreRouter);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

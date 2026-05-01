@@ -28,3 +28,9 @@ export function getSummarizeImageUrl() {
 export function getSummarizeMergeUrl() {
   return `${BASE}/api/summarize/merge`;
 }
+export function getFlashcardsMoreUrl() {
+  return `${BASE}/api/flashcards/more`;
+}
+export function getQuizMoreUrl() {
+  return `${BASE}/api/quiz/more`;
+}

@@ -97,5 +97,13 @@ export function useStreaming() {
     setStreaming(false);
   }, []);
 
-  return { stream, streamText, streaming, result, error, abort, debugInfo };
+  const appendFlashcards = useCallback((newCards) => {
+    setResult(prev => prev ? { ...prev, flashcards: [...(prev.flashcards || []), ...newCards] } : prev);
+  }, []);
+
+  const appendQuiz = useCallback((newQuestions) => {
+    setResult(prev => prev ? { ...prev, quiz: [...(prev.quiz || []), ...newQuestions] } : prev);
+  }, []);
+
+  return { stream, streamText, streaming, result, error, abort, debugInfo, appendFlashcards, appendQuiz };
 }

@@ -23,7 +23,7 @@ import { useHistory } from "./hooks/useHistory.js";
 import { useStreaming } from "./hooks/useStreaming.js";
 import { useKeyboard } from "./hooks/useKeyboard.js";
 import { useIsMobile } from "./hooks/useIsMobile.js";
-import { getSummarizeTextUrl, getSummarizePDFUrl, getSummarizeURLUrl, getSummarizeImageUrl, getSummarizeMergeUrl } from "./utils/api.js";
+import { getSummarizeTextUrl, getSummarizePDFUrl, getSummarizeURLUrl, getSummarizeImageUrl, getSummarizeMergeUrl, getFlashcardsMoreUrl, getQuizMoreUrl } from "./utils/api.js";
 
 // Map bottom nav tab index → results panel tab index
 const BOTTOM_TO_RESULTS = { 0: 0, 1: 3, 2: 4, 3: 5 };
@@ -36,7 +36,7 @@ export default function App() {
   const { stats, increment } = useStats();
   const { streak, recordUsage } = useStreak();
   const { history, addEntry, removeEntry } = useHistory();
-  const { stream, streamText, streaming, result, error, abort, debugInfo } = useStreaming();
+  const { stream, streamText, streaming, result, error, abort, debugInfo, appendFlashcards, appendQuiz } = useStreaming();
   const [deepDiveDebug, setDeepDiveDebug] = useState(null);
   const [voiceDebug, setVoiceDebug] = useState(null);
   const { isMobile, isTablet, isDesktop } = useIsMobile();
@@ -167,6 +167,60 @@ export default function App() {
     }, 80);
   }, [resetDemoState]);
 
+  const handleGenerateMoreFlashcards = useCallback(async () => {
+    if (!result) return;
+    try {
+      const res = await fetch(getFlashcardsMoreUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          summary: result.summary,
+          keyPoints: result.keyPoints || [],
+          concepts: result.concepts || [],
+          subject: result.meta?.subject || "General",
+          language: result.meta?.language || lang,
+          existingFronts: (result.flashcards || []).map(f => f.front),
+        }),
+      });
+      const data = await res.json();
+      if (data.flashcards?.length) {
+        appendFlashcards(data.flashcards);
+        addToast(`${data.flashcards.length} new flashcards added!`, "success");
+      } else {
+        addToast(data.error || "Failed to generate flashcards", "error");
+      }
+    } catch {
+      addToast("Failed to generate more flashcards", "error");
+    }
+  }, [result, lang, appendFlashcards, addToast]);
+
+  const handleGenerateMoreQuiz = useCallback(async () => {
+    if (!result) return;
+    try {
+      const res = await fetch(getQuizMoreUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          summary: result.summary,
+          keyPoints: result.keyPoints || [],
+          concepts: result.concepts || [],
+          subject: result.meta?.subject || "General",
+          language: result.meta?.language || lang,
+          existingQuestions: result.quiz || [],
+        }),
+      });
+      const data = await res.json();
+      if (data.quiz?.length) {
+        appendQuiz(data.quiz);
+        addToast(`${data.quiz.length} new questions added!`, "success");
+      } else {
+        addToast(data.error || "Failed to generate questions", "error");
+      }
+    } catch {
+      addToast("Failed to generate more quiz questions", "error");
+    }
+  }, [result, lang, appendQuiz, addToast]);
+
   const handleQuizComplete = useCallback((score, total) => {
     increment("quizzes");
     if (score === total) {
@@ -248,6 +302,8 @@ export default function App() {
     activeTab, setActiveTab,
     onQuizComplete: handleQuizComplete,
     onFlashcardsViewed: handleFlashcardsViewed,
+    onGenerateMoreFlashcards: handleGenerateMoreFlashcards,
+    onGenerateMoreQuiz: handleGenerateMoreQuiz,
     addToast,
     demoControl,
     onDeepDiveDebug: setDeepDiveDebug,

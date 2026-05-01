@@ -139,6 +139,15 @@ export const DEMO_RESULT = {
     "Implement a simple model (e.g., linear regression) from scratch to build intuition",
     "Practice evaluating models using precision, recall, and F1 score on real datasets",
   ],
+  mindmap: {
+    center: "Machine Learning",
+    branches: [
+      { label: "Learning Types", children: ["Supervised", "Unsupervised", "Reinforcement"] },
+      { label: "Core Algorithms", children: ["Neural Networks", "Gradient Descent", "Decision Trees"] },
+      { label: "Model Evaluation", children: ["Precision", "Recall", "F1 Score", "Accuracy"] },
+      { label: "Key Challenges", children: ["Overfitting", "Bias-Variance", "Data Quality"] },
+    ],
+  },
 };
 
 // Pre-loaded French result — no API call, shown instantly during demo Act 7
