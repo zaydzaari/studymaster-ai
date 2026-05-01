@@ -101,10 +101,7 @@ const MINDMAP_SCHEMA = `,
 MIND MAP RULES: Generate 3-5 branches, 2-4 children each. Children are plain strings (not objects). All labels max 4 words. All labels in OUTPUT LANGUAGE.`;
 
 export function buildMasterPrompt(content, outputLanguage = 'same as input') {
-  return `You are an expert university professor building a complete, high-quality study package.
-
-Your philosophy: students learn by understanding WHY things work, not just what they are.
-Write at the level of a motivated university student. Every explanation must build genuine understanding.
+  return `You are an expert study assistant. Analyze the content and produce a complete study package as JSON.
 
 OUTPUT LANGUAGE: ${outputLanguage}
 
@@ -113,169 +110,105 @@ CONTENT:
 ${content.slice(0, 50000)}
 """
 
-Return EXACTLY this JSON. No markdown. No code blocks. Valid JSON only:
+RULES — read before writing:
+1. summary: minimum 300 words, 3-4 paragraphs of flowing prose. Cover (a) what this topic is and why it matters, (b) how the core mechanisms/concepts work, (c) real-world applications or implications. No bullet points. No headers. Pure readable paragraphs.
+2. keyPoints: 6 specific, informative insights drawn from the content. Each one should state something concrete — a mechanism, a consequence, a distinction, or a principle. NOT generic filler like "This topic is important."
+3. flashcards: 6 cards. Front = a question starting with "What", "Why", "How", or "When". Back = a complete 2-sentence answer. Both front and back must contain actual content from the material — no placeholders.
+4. quiz: 5 questions. Each wrong option must be plausible — something a confused student might actually pick. Randomize which index (0-3) holds the correct answer across questions. Explanation must be 1-2 sentences explaining the correct answer and why the common wrong choice fails.
+5. All text fields must be in the OUTPUT LANGUAGE.
+6. Output valid JSON only — no markdown, no code fences, no commentary before or after.
+
+Return this JSON structure:
 
 {
   "meta": {
-    "title": "Descriptive title capturing the core idea (max 8 words)",
-    "difficulty": "beginner|intermediate|advanced",
+    "title": "...",
+    "difficulty": "beginner",
     "readingTime": 5,
     "summaryReadingTime": 2,
-    "subject": "Precise subject area (e.g. Neuroscience, Constitutional Law, Thermodynamics)",
+    "subject": "...",
     "language": "en"
   },
-  "summary": "Write 3-4 rich paragraphs totaling 300+ words. Paragraph 1: introduce the core idea and its significance — WHY does this topic matter? Paragraph 2: explain the main mechanisms, how key concepts interrelate, and the underlying logic. Paragraph 3: examine real-world implications, applications, or consequences. Paragraph 4 (optional): connect to broader context or synthesize the key insight. Use precise vocabulary but define terms as you introduce them. Do NOT use bullet points — only flowing prose.",
-  "keyPoints": [
-    "Non-obvious insight that explains WHY or HOW — not just a restatement of a fact",
-    "A key mechanism explained in one compelling sentence",
-    "A surprising consequence or implication of the main idea",
-    "A common misconception corrected with the real explanation",
-    "The single most important principle a student must internalize",
-    "How two core concepts connect in a way that isn't immediately obvious"
-  ],
-  "learningObjectives": [
-    "Analyze [specific concept] and explain why it produces [specific outcome]",
-    "Distinguish between [A] and [B] and identify the conditions where each applies",
-    "Apply [core principle] to evaluate [type of real-world scenario]"
-  ],
-  "concepts": ["5-8 key technical terms from the content"],
-  "keyQuote": "The single most important, memorable sentence from the content itself",
+  "summary": "...",
+  "keyPoints": ["...", "...", "...", "...", "...", "..."],
+  "learningObjectives": ["...", "...", "..."],
+  "concepts": ["...", "...", "...", "...", "..."],
+  "keyQuote": "...",
   "studyQuestions": [
-    { "question": "Direct recall question about a key definition?", "difficulty": "easy" },
-    { "question": "Question requiring the student to explain a mechanism in their own words?", "difficulty": "medium" },
-    { "question": "Question asking the student to apply a concept to a new scenario?", "difficulty": "hard" },
-    { "question": "Another recall question about a second key term?", "difficulty": "easy" },
-    { "question": "Question connecting two concepts from the content?", "difficulty": "medium" }
+    { "question": "...", "difficulty": "easy" },
+    { "question": "...", "difficulty": "medium" },
+    { "question": "...", "difficulty": "hard" },
+    { "question": "...", "difficulty": "easy" },
+    { "question": "...", "difficulty": "medium" }
   ],
   "flashcards": [
-    { "front": "Why does [mechanism] produce [result]?", "back": "Because [underlying cause]. This works through [specific mechanism]. In practice, this means [real consequence]." },
-    { "front": "How does [process] differ from [related process]?", "back": "[Process A] works by [explanation]. [Process B] instead [explanation]. The key distinction is [core difference]." },
-    { "front": "What is [key concept] and why does it matter?", "back": "[Precise definition in one sentence]. It matters because [implication or consequence]. Without it, [what would fail or change]." },
-    { "front": "When should you use [approach] instead of [alternative]?", "back": "Use [approach] when [condition]. The reason is [explanation of why it fits better]. [Alternative] is better when [different condition]." },
-    { "front": "What causes [common problem or failure mode]?", "back": "[Problem] occurs when [underlying cause]. The mechanism is [explanation]. To prevent it, [specific remedy or insight]." },
-    { "front": "How does [core concept] relate to [another concept]?", "back": "[Concept A] enables [Concept B] by [mechanism]. They interact through [explanation]. Understanding this connection explains why [insight]." }
+    { "front": "...", "back": "..." },
+    { "front": "...", "back": "..." },
+    { "front": "...", "back": "..." },
+    { "front": "...", "back": "..." },
+    { "front": "...", "back": "..." },
+    { "front": "...", "back": "..." }
   ],
   "quiz": [
-    {
-      "question": "Question testing genuine understanding — not surface recall?",
-      "options": [
-        "Correct answer with precise, accurate wording",
-        "Plausible distractor: a student who partially understands might choose this",
-        "Plausible distractor: confuses a closely related concept",
-        "Plausible distractor: represents the most common misconception"
-      ],
-      "correctAnswer": 0,
-      "explanation": "The correct answer is [answer] because [deep explanation]. Option B is tempting but wrong because [distinction]. The key insight is [principle]."
-    },
-    {
-      "question": "Second question — tests a different concept?",
-      "options": ["Wrong but plausible", "Wrong but plausible", "Correct", "Wrong but plausible"],
-      "correctAnswer": 2,
-      "explanation": "Explanation connecting the concept to the underlying principle."
-    },
-    {
-      "question": "Third question — requires applying knowledge to a scenario?",
-      "options": ["Wrong but plausible", "Correct", "Wrong but plausible", "Wrong but plausible"],
-      "correctAnswer": 1,
-      "explanation": "Explanation of why this is the right choice in this context."
-    },
-    {
-      "question": "Fourth question — tests a subtle but important distinction?",
-      "options": ["Wrong but plausible", "Wrong but plausible", "Wrong but plausible", "Correct"],
-      "correctAnswer": 3,
-      "explanation": "Explanation of the distinction and why it matters."
-    },
-    {
-      "question": "Fifth question — synthesizes multiple concepts?",
-      "options": ["Correct", "Wrong but plausible", "Wrong but plausible", "Wrong but plausible"],
-      "correctAnswer": 0,
-      "explanation": "Explanation showing how multiple concepts connect to reach this answer."
-    }
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 0, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 2, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 1, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 3, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 0, "explanation": "..." }
   ]${MINDMAP_SCHEMA}`;
 }
 
 // Prompt for multimodal inputs (PDF, image) — content is passed as inline data, not in the text
 export function buildMultimodalPrompt(outputLanguage = 'same as input') {
-  return `You are an expert university professor building a complete, high-quality study package.
-
-Your philosophy: students learn by understanding WHY things work, not just what they are.
-Analyze the provided document, image, or handwritten notes carefully.
+  return `You are an expert study assistant. Analyze the provided document or image and produce a complete study package as JSON.
 
 OUTPUT LANGUAGE: ${outputLanguage}
 
-Return EXACTLY this JSON. No markdown. No code blocks. Valid JSON only:
+RULES — read before writing:
+1. summary: minimum 300 words, 3-4 paragraphs of flowing prose. Cover (a) what this topic is and why it matters, (b) how the core mechanisms/concepts work, (c) real-world applications or implications. No bullet points. No headers. Pure readable paragraphs.
+2. keyPoints: 6 specific, informative insights. Each must state something concrete — a mechanism, a consequence, a distinction, or a principle. NOT generic filler like "This topic is important."
+3. flashcards: 6 cards. Front = a question starting with "What", "Why", "How", or "When". Back = a complete 2-sentence answer. Both must contain actual content from the material.
+4. quiz: 5 questions. Each wrong option must be plausible — something a confused student might actually pick. Randomize correctAnswer index across questions. Explanation: 1-2 sentences.
+5. All text fields must be in the OUTPUT LANGUAGE.
+6. Output valid JSON only — no markdown, no code fences, no commentary.
+
+Return this JSON structure:
 
 {
   "meta": {
-    "title": "Descriptive title capturing the core idea (max 8 words)",
-    "difficulty": "beginner|intermediate|advanced",
+    "title": "...",
+    "difficulty": "beginner",
     "readingTime": 5,
     "summaryReadingTime": 2,
-    "subject": "Precise subject area",
+    "subject": "...",
     "language": "en"
   },
-  "summary": "Write 3-4 rich paragraphs totaling 300+ words. Paragraph 1: introduce the core idea and WHY this topic matters. Paragraph 2: explain the main mechanisms and how key concepts interrelate. Paragraph 3: examine real-world implications and applications. Paragraph 4: synthesize the key insight or connect to broader context. Flowing prose only — no bullet points.",
-  "keyPoints": [
-    "Non-obvious insight explaining WHY or HOW — not a restatement of fact",
-    "A key mechanism explained in one compelling sentence",
-    "A surprising consequence or implication",
-    "A common misconception corrected with the real explanation",
-    "The single most important principle to internalize",
-    "How two core concepts connect in a non-obvious way"
-  ],
-  "learningObjectives": [
-    "Analyze [specific concept] and explain why it produces [specific outcome]",
-    "Distinguish between [A] and [B] and identify when each applies",
-    "Apply [core principle] to evaluate [type of real-world scenario]"
-  ],
-  "concepts": ["5-8 key technical terms"],
-  "keyQuote": "The single most important, memorable sentence from the content",
+  "summary": "...",
+  "keyPoints": ["...", "...", "...", "...", "...", "..."],
+  "learningObjectives": ["...", "...", "..."],
+  "concepts": ["...", "...", "...", "...", "..."],
+  "keyQuote": "...",
   "studyQuestions": [
-    { "question": "Direct recall question?", "difficulty": "easy" },
-    { "question": "Question requiring explanation of a mechanism?", "difficulty": "medium" },
-    { "question": "Application question with a new scenario?", "difficulty": "hard" },
-    { "question": "Another recall question?", "difficulty": "easy" },
-    { "question": "Question connecting two concepts?", "difficulty": "medium" }
+    { "question": "...", "difficulty": "easy" },
+    { "question": "...", "difficulty": "medium" },
+    { "question": "...", "difficulty": "hard" },
+    { "question": "...", "difficulty": "easy" },
+    { "question": "...", "difficulty": "medium" }
   ],
   "flashcards": [
-    { "front": "Why does [mechanism] produce [result]?", "back": "Because [cause]. This works through [mechanism]. In practice, [real consequence]." },
-    { "front": "How does [process] differ from [related process]?", "back": "[A] works by [explanation]. [B] instead [explanation]. The key distinction is [difference]." },
-    { "front": "What is [key concept] and why does it matter?", "back": "[Definition]. It matters because [implication]. Without it, [consequence]." },
-    { "front": "When should you use [approach] instead of [alternative]?", "back": "Use [approach] when [condition]. The reason is [explanation]. [Alternative] is better when [condition]." },
-    { "front": "What causes [common problem or failure mode]?", "back": "[Problem] occurs when [cause]. The mechanism is [explanation]. To prevent it, [remedy]." },
-    { "front": "How does [concept A] relate to [concept B]?", "back": "[A] enables [B] by [mechanism]. They interact through [explanation]. This connection explains why [insight]." }
+    { "front": "...", "back": "..." },
+    { "front": "...", "back": "..." },
+    { "front": "...", "back": "..." },
+    { "front": "...", "back": "..." },
+    { "front": "...", "back": "..." },
+    { "front": "...", "back": "..." }
   ],
   "quiz": [
-    {
-      "question": "Question testing genuine understanding?",
-      "options": ["Correct answer", "Plausible distractor — partial understanding", "Plausible distractor — related concept confusion", "Plausible distractor — common misconception"],
-      "correctAnswer": 0,
-      "explanation": "The correct answer is [answer] because [deep explanation]. The key insight is [principle]."
-    },
-    {
-      "question": "Second question on a different concept?",
-      "options": ["Wrong but plausible", "Wrong but plausible", "Correct", "Wrong but plausible"],
-      "correctAnswer": 2,
-      "explanation": "Explanation."
-    },
-    {
-      "question": "Third question — application scenario?",
-      "options": ["Wrong but plausible", "Correct", "Wrong but plausible", "Wrong but plausible"],
-      "correctAnswer": 1,
-      "explanation": "Explanation."
-    },
-    {
-      "question": "Fourth question — subtle distinction?",
-      "options": ["Wrong but plausible", "Wrong but plausible", "Wrong but plausible", "Correct"],
-      "correctAnswer": 3,
-      "explanation": "Explanation."
-    },
-    {
-      "question": "Fifth question — synthesis?",
-      "options": ["Correct", "Wrong but plausible", "Wrong but plausible", "Wrong but plausible"],
-      "correctAnswer": 0,
-      "explanation": "Explanation."
-    }
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 0, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 2, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 1, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 3, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 0, "explanation": "..." }
   ]${MINDMAP_SCHEMA}`;
 }
 
