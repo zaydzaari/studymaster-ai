@@ -105,6 +105,15 @@ export function setupVoiceWebSocket(wss) {
             });
           }
 
+          if (msg.type === 'text' && session) {
+            send({
+              type: 'inputTranscript',
+              text: msg.text,
+              final: true,
+            });
+            await session.sendRealtimeInput({ text: msg.text });
+          }
+
           if (msg.type === 'stop') cleanup();
         } else if (isBinary && session) {
           // Binary frame = raw PCM-16 audio at 16 kHz from the client

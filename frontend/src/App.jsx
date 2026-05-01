@@ -12,7 +12,7 @@ import HamburgerMenu from "./components/HamburgerMenu.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import Toast from "./components/Toast.jsx";
 import DemoRunner from "./components/DemoRunner.jsx";
-import VoiceTutor from "./components/VoiceTutor.jsx";
+import UnifiedTutor from "./components/UnifiedTutor.jsx";
 import ChangelogModal from "./components/ChangelogModal.jsx";
 import DebugPanel from "./components/DebugPanel.jsx";
 import { useTheme } from "./hooks/useTheme.js";
@@ -23,7 +23,6 @@ import { useHistory } from "./hooks/useHistory.js";
 import { useStreaming } from "./hooks/useStreaming.js";
 import { useKeyboard } from "./hooks/useKeyboard.js";
 import { useIsMobile } from "./hooks/useIsMobile.js";
-import TextTutor from "./components/TextTutor.jsx";
 import { getSummarizeTextUrl, getSummarizePDFUrl, getSummarizeURLUrl, getSummarizeImageUrl, getSummarizeMergeUrl } from "./utils/api.js";
 
 // Map bottom nav tab index → results panel tab index
@@ -407,9 +406,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* AI Tutors */}
-      <VoiceTutor result={displayResult} isMobile={isMobile} onVoiceDebug={setVoiceDebug} />
-      <TextTutor result={displayResult} isMobile={isMobile} />
+      {/* AI Tutor */}
+      <UnifiedTutor result={displayResult} isMobile={isMobile} onVoiceDebug={setVoiceDebug} />
 
       {/* Debug panel */}
       <DebugPanel

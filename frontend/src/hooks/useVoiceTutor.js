@@ -31,6 +31,7 @@ export function useVoiceTutor() {
   const [transcript, setTranscript] = useState([]);
   const [errorMsg, setErrorMsg] = useState(null);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [muted, setMuted] = useState(false);
 
   const [voiceDebug, setVoiceDebug] = useState({
     wsUrl: null,
@@ -398,6 +399,25 @@ export function useVoiceTutor() {
     setErrorMsg(null);
   }, [cleanup]);
 
+  const sendText = useCallback((text) => {
+    if (!text?.trim()) return;
+    setTranscript(prev => [...prev, { role: "user", text: text.trim(), final: true }]);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "text", text: text.trim() }));
+    }
+  }, []);
+
+  const toggleMute = useCallback(async () => {
+    if (muted) {
+      const ok = await startMic();
+      if (ok) setMuted(false);
+    } else {
+      stopMic();
+      setMuted(true);
+      setAudioLevel(0);
+    }
+  }, [muted, startMic, stopMic]);
+
   const retry = useCallback(() => {
     cleanup();
     reconnectAttemptsRef.current = 0;
@@ -408,5 +428,5 @@ export function useVoiceTutor() {
 
   useEffect(() => cleanup, [cleanup]);
 
-  return { isOpen, status, transcript, errorMsg, audioLevel, supported, unavailableOnDeploy, open, close, retry, voiceDebug };
+  return { isOpen, status, transcript, errorMsg, audioLevel, muted, supported, unavailableOnDeploy, open, close, retry, sendText, toggleMute, voiceDebug };
 }
