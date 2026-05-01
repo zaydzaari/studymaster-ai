@@ -89,7 +89,40 @@ export default function SummaryView({ result, lang, addToast, demoControl, onDeb
         ))}
       </div>
 
-      {/* Key Takeaways section */}
+      {/* Concept relationships */}
+      {result.conceptRelations?.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--accent)", marginBottom: 12 }}>
+            How Concepts Connect
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {result.conceptRelations.map((rel, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{
+                  padding: "4px 10px", background: "var(--accent-light)", color: "var(--accent)",
+                  borderRadius: 6, fontSize: 12, fontWeight: 600, border: "1px solid rgba(79,70,229,0.2)",
+                  whiteSpace: "nowrap",
+                }}>
+                  {rel.from}
+                </span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", whiteSpace: "nowrap" }}>
+                  {rel.relation}
+                </span>
+                <span style={{ fontSize: 14, color: "var(--text-muted)" }}>→</span>
+                <span style={{
+                  padding: "4px 10px", background: "var(--bg-secondary)", color: "var(--text-primary)",
+                  borderRadius: 6, fontSize: 12, fontWeight: 600, border: "1px solid var(--border)",
+                  whiteSpace: "nowrap",
+                }}>
+                  {rel.to}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Key points */}
       {result.keyPoints?.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <div style={{

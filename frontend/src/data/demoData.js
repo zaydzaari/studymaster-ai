@@ -37,6 +37,15 @@ export const DEMO_RESULT = {
     "F1 Score",
   ],
   keyQuote: "Machine learning is the field of study that gives computers the ability to learn without being explicitly programmed. — Arthur Samuel, 1959",
+  conceptRelations: [
+    { from: "Machine Learning", relation: "is a subset of", to: "Artificial Intelligence" },
+    { from: "Supervised Learning", relation: "requires", to: "Labeled Data" },
+    { from: "Neural Networks", relation: "are trained using", to: "Gradient Descent" },
+    { from: "Gradient Descent", relation: "minimizes", to: "Loss Function" },
+    { from: "Overfitting", relation: "is prevented by", to: "Regularization" },
+    { from: "F1 Score", relation: "balances", to: "Precision & Recall" },
+    { from: "Reinforcement Learning", relation: "learns through", to: "Rewards & Penalties" },
+  ],
   questions: [
     {
       question: "What distinguishes machine learning from traditional software?",

@@ -110,15 +110,25 @@ CONTENT:
 ${content.slice(0, 50000)}
 """
 
-RULES — read before writing:
-1. summary: minimum 300 words, 3-4 paragraphs of flowing prose. Cover (a) what this topic is and why it matters, (b) how the core mechanisms/concepts work, (c) real-world applications or implications. No bullet points. No headers. Pure readable paragraphs.
-2. keyPoints: 6 specific, informative insights drawn from the content. Each one should state something concrete — a mechanism, a consequence, a distinction, or a principle. NOT generic filler like "This topic is important."
-3. flashcards: 6 cards. Front = a question starting with "What", "Why", "How", or "When". Back = a complete 2-sentence answer. Both front and back must contain actual content from the material — no placeholders.
-4. quiz: 5 questions. Each wrong option must be plausible — something a confused student might actually pick. Randomize which index (0-3) holds the correct answer across questions. Explanation must be 1-2 sentences explaining the correct answer and why the common wrong choice fails.
-5. All text fields must be in the OUTPUT LANGUAGE.
-6. Output valid JSON only — no markdown, no code fences, no commentary before or after.
+RULES — read all before writing:
 
-Return this JSON structure:
+SUMMARY: Write 3-4 paragraphs, minimum 300 words, flowing prose. Cover: (a) what this topic is and why it matters, (b) how the core mechanisms work and how key concepts interrelate, (c) real-world applications. No bullet points, no headers.
+
+CONCEPT RELATIONS: Extract 6-10 meaningful relationships between concepts from the content. Each relation must be a real logical link — causal, hierarchical, sequential, or functional. Format: { "from": "Concept A", "relation": "verb phrase", "to": "Concept B" }. Example relations: "is a type of", "depends on", "enables", "prevents", "is measured by", "leads to", "is caused by", "contrasts with". These must come from the actual content, not be made up.
+
+KEY POINTS: 6 concrete insights. Each must name a specific mechanism, consequence, or principle. No filler.
+
+FLASHCARDS: 6 cards. Front = question starting with What/Why/How/When. Back = 2 complete sentences with real content.
+
+QUIZ — CRITICAL RULES:
+- Write 5 questions testing understanding, not memorization.
+- For EACH question, decide the correct answer FIRST, then place it at a RANDOM position (0, 1, 2, or 3). Do NOT use a repeating pattern. The positions across 5 questions must vary — avoid always using 0 or always incrementing.
+- ALL 4 options must use the same grammatical structure, similar length (within 20% of each other), and the same level of specificity. A student MUST read the content of each option to distinguish them — they cannot guess by appearance, length, or style.
+- Wrong options must be things a real student who studied but made a mistake would choose — partial truths, confusions between related concepts, correct statements about the wrong context.
+- explanation: 2 sentences. First: why the correct answer is right. Second: why the most tempting wrong option is wrong.
+
+All text fields must be in the OUTPUT LANGUAGE.
+Output valid JSON only — no markdown, no code fences, no commentary.
 
 {
   "meta": {
@@ -130,6 +140,14 @@ Return this JSON structure:
     "language": "en"
   },
   "summary": "...",
+  "conceptRelations": [
+    { "from": "...", "relation": "...", "to": "..." },
+    { "from": "...", "relation": "...", "to": "..." },
+    { "from": "...", "relation": "...", "to": "..." },
+    { "from": "...", "relation": "...", "to": "..." },
+    { "from": "...", "relation": "...", "to": "..." },
+    { "from": "...", "relation": "...", "to": "..." }
+  ],
   "keyPoints": ["...", "...", "...", "...", "...", "..."],
   "learningObjectives": ["...", "...", "..."],
   "concepts": ["...", "...", "...", "...", "..."],
@@ -150,11 +168,11 @@ Return this JSON structure:
     { "front": "...", "back": "..." }
   ],
   "quiz": [
-    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 0, "explanation": "..." },
-    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 2, "explanation": "..." },
     { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 1, "explanation": "..." },
     { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 3, "explanation": "..." },
-    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 0, "explanation": "..." }
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 0, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 2, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 1, "explanation": "..." }
   ]${MINDMAP_SCHEMA}`;
 }
 
@@ -164,26 +182,35 @@ export function buildMultimodalPrompt(outputLanguage = 'same as input') {
 
 OUTPUT LANGUAGE: ${outputLanguage}
 
-RULES — read before writing:
-1. summary: minimum 300 words, 3-4 paragraphs of flowing prose. Cover (a) what this topic is and why it matters, (b) how the core mechanisms/concepts work, (c) real-world applications or implications. No bullet points. No headers. Pure readable paragraphs.
-2. keyPoints: 6 specific, informative insights. Each must state something concrete — a mechanism, a consequence, a distinction, or a principle. NOT generic filler like "This topic is important."
-3. flashcards: 6 cards. Front = a question starting with "What", "Why", "How", or "When". Back = a complete 2-sentence answer. Both must contain actual content from the material.
-4. quiz: 5 questions. Each wrong option must be plausible — something a confused student might actually pick. Randomize correctAnswer index across questions. Explanation: 1-2 sentences.
-5. All text fields must be in the OUTPUT LANGUAGE.
-6. Output valid JSON only — no markdown, no code fences, no commentary.
+RULES — read all before writing:
 
-Return this JSON structure:
+SUMMARY: 3-4 paragraphs, minimum 300 words, flowing prose. Cover: (a) what this topic is and why it matters, (b) how the core mechanisms work and how concepts interrelate, (c) real-world applications. No bullet points, no headers.
+
+CONCEPT RELATIONS: 6-10 real logical links between concepts found in the content. Each must be a genuine causal, hierarchical, sequential, or functional relationship. Format: { "from": "A", "relation": "verb phrase", "to": "B" }.
+
+KEY POINTS: 6 concrete insights naming specific mechanisms, consequences, or principles. No filler.
+
+FLASHCARDS: 6 cards. Front = question starting with What/Why/How/When. Back = 2 complete sentences with real content.
+
+QUIZ — CRITICAL:
+- 5 questions testing understanding.
+- Place the correct answer at a RANDOM position for each question. Vary the correctAnswer indices — do NOT use a repeating pattern.
+- All 4 options must use identical grammatical structure and similar length. Wrong options must be plausible — partial truths or concept confusions, not obviously wrong.
+- explanation: 2 sentences (why correct is right, why the tempting wrong option fails).
+
+All text in OUTPUT LANGUAGE. Valid JSON only — no markdown, no code fences.
 
 {
-  "meta": {
-    "title": "...",
-    "difficulty": "beginner",
-    "readingTime": 5,
-    "summaryReadingTime": 2,
-    "subject": "...",
-    "language": "en"
-  },
+  "meta": { "title": "...", "difficulty": "beginner", "readingTime": 5, "summaryReadingTime": 2, "subject": "...", "language": "en" },
   "summary": "...",
+  "conceptRelations": [
+    { "from": "...", "relation": "...", "to": "..." },
+    { "from": "...", "relation": "...", "to": "..." },
+    { "from": "...", "relation": "...", "to": "..." },
+    { "from": "...", "relation": "...", "to": "..." },
+    { "from": "...", "relation": "...", "to": "..." },
+    { "from": "...", "relation": "...", "to": "..." }
+  ],
   "keyPoints": ["...", "...", "...", "...", "...", "..."],
   "learningObjectives": ["...", "...", "..."],
   "concepts": ["...", "...", "...", "...", "..."],
@@ -204,11 +231,11 @@ Return this JSON structure:
     { "front": "...", "back": "..." }
   ],
   "quiz": [
-    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 0, "explanation": "..." },
     { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 2, "explanation": "..." },
-    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 1, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 0, "explanation": "..." },
     { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 3, "explanation": "..." },
-    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 0, "explanation": "..." }
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 1, "explanation": "..." },
+    { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswer": 2, "explanation": "..." }
   ]${MINDMAP_SCHEMA}`;
 }
 
