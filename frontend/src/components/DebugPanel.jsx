@@ -63,8 +63,10 @@ function bytes(n) {
   return `${(n / 1024).toFixed(1)} KB`;
 }
 
-export default function DebugPanel({ streamDebug, deepDiveDebug, voiceDebug, streaming }) {
+export default function DebugPanel({ streamDebug, deepDiveDebug, voiceDebug, streaming, visible }) {
   const [open, setOpen] = useState(true);
+
+  if (!visible) return null;
 
   const d = streamDebug;
   const dd = deepDiveDebug;

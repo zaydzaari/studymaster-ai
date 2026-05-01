@@ -13,7 +13,6 @@ import BottomNav from "./components/BottomNav.jsx";
 import Toast from "./components/Toast.jsx";
 import DemoRunner from "./components/DemoRunner.jsx";
 import UnifiedTutor from "./components/UnifiedTutor.jsx";
-import ChangelogModal from "./components/ChangelogModal.jsx";
 import DebugPanel from "./components/DebugPanel.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 import { useLanguage } from "./hooks/useLanguage.js";
@@ -48,7 +47,7 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [changelogOpen, setChangelogOpen] = useState(false);
+  const [debugVisible, setDebugVisible] = useState(false);
   const submitRef = useRef(null);
 
   // ── Demo mode state ───────────────────────────────────────────────
@@ -260,6 +259,11 @@ export default function App() {
       action: () => submitRef.current?.click(),
       allowTyping: true,
     },
+    {
+      key: "End",
+      action: () => setDebugVisible(v => !v),
+      allowTyping: false,
+    },
     ...([0, 1, 2, 3, 4, 5].map(i => ({
       key: String(i + 1),
       action: () => result && setActiveTab(i),
@@ -318,7 +322,6 @@ export default function App() {
         onChangeLang={changeLanguage}
         streak={streak}
         onOpenMenu={() => setMenuOpen(true)}
-        onOpenChangelog={() => setChangelogOpen(true)}
       />
 
       {/* Stats bar — desktop/tablet only (hidden on mobile via CSS) */}
@@ -434,13 +437,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Changelog modal */}
-      <AnimatePresence>
-        {changelogOpen && (
-          <ChangelogModal onClose={() => setChangelogOpen(false)} />
-        )}
-      </AnimatePresence>
-
       {/* Hamburger menu — mobile & tablet */}
       <HamburgerMenu
         isOpen={menuOpen}
@@ -465,12 +461,13 @@ export default function App() {
       {/* AI Tutor */}
       <UnifiedTutor result={displayResult} isMobile={isMobile} onVoiceDebug={setVoiceDebug} />
 
-      {/* Debug panel */}
+      {/* Debug panel — toggle with End key */}
       <DebugPanel
         streamDebug={debugInfo}
         deepDiveDebug={deepDiveDebug}
         voiceDebug={voiceDebug}
         streaming={displayStreaming}
+        visible={debugVisible}
       />
 
       {/* Cinematic demo runner */}

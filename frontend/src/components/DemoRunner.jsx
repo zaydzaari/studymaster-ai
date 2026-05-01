@@ -1,23 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactConfetti from "react-confetti";
-import { DEMO_TYPING_TEXT, DEMO_RESULT, DEMO_RESULT_FR, DEMO_RESULT_AR } from "../data/demoData.js";
+import { DEMO_TYPING_TEXT, DEMO_RESULT } from "../data/demoData.js";
 
 const ACT_NAMES = [
   "", "Input", "Loading", "Streaming Results",
-  "Flashcards", "Quiz", "Celebration", "Language Showcase", "Premium Features", "Finale",
+  "Flashcards", "Quiz", "Celebration", "AI Tutor", "Finale",
 ];
 
 const LOADING_STEPS = [
-  { label: "📄 Extracting content...",    progress: 15,  duration: 600  },
-  { label: "🧠 Sending to Gemini AI...", progress: 40,  duration: 1000 },
-  { label: "✍️ Generating summary...",   progress: 60,  duration: 1000 },
-  { label: "📇 Creating flashcards...",  progress: 80,  duration: 900  },
-  { label: "📝 Building quiz...",        progress: 95,  duration: 800  },
-  { label: "✅ Complete!",               progress: 100, duration: 500  },
+  { label: "📄 Extracting content...",    progress: 20,  duration: 400  },
+  { label: "🧠 Sending to Gemini AI...", progress: 50,  duration: 700  },
+  { label: "✍️ Generating summary...",   progress: 75,  duration: 700  },
+  { label: "📇 Creating flashcards...",  progress: 92,  duration: 600  },
+  { label: "✅ Complete!",               progress: 100, duration: 400  },
 ];
 
-const TOTAL_ACTS = 9;
+const TOTAL_ACTS = 8;
 
 export default function DemoRunner({
   onSetInputText, onSetResult, onSetStreaming, onSetStreamingSummary,
@@ -34,7 +33,6 @@ export default function DemoRunner({
   const [loadingVisible, setLoadingVisible] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingLabel, setLoadingLabel] = useState("");
-  const [langFading, setLangFading] = useState(false);
 
   // Generation counter — invalidates stale async runs (fixes React StrictMode double-invocation)
   const generationRef = useRef(0);
@@ -66,39 +64,6 @@ export default function DemoRunner({
       }
     }
 
-    async function typeText(text) {
-      propsRef.current.onSetInputText?.("");
-      let acc = "";
-      for (const char of text) {
-        if (dead()) return;
-        while (pausedRef.current && !dead()) {
-          await new Promise(r => setTimeout(r, 50));
-        }
-        if (dead()) return;
-        acc += char;
-        propsRef.current.onSetInputText?.(acc);
-        const ms = char === "." || char === "!" || char === "?" ? 90
-                 : char === "," ? 35 : char === " " ? 20 : 14;
-        await new Promise(r => setTimeout(r, ms));
-      }
-    }
-
-    async function streamWords(text, msPerWord) {
-      const words = text.split(" ");
-      let acc = "";
-      propsRef.current.onSetStreamingSummary?.("");
-      for (const word of words) {
-        if (dead()) return;
-        while (pausedRef.current && !dead()) {
-          await new Promise(r => setTimeout(r, 50));
-        }
-        if (dead()) return;
-        acc += (acc ? " " : "") + word;
-        propsRef.current.onSetStreamingSummary?.(acc);
-        await new Promise(r => setTimeout(r, msPerWord));
-      }
-    }
-
     function showTip(text, selector) {
       try {
         const el = selector ? document.querySelector(selector) : null;
@@ -123,33 +88,32 @@ export default function DemoRunner({
       } catch { /* ignore */ }
     }
 
-    // Fade the results area out, swap content, fade back in
-    async function fadeSwap(fn) {
-      setHighlightRect(null); setTooltip(null);
-      setLangFading(true);
-      await sleep(380); if (dead()) return;
-      fn();
-      setLangFading(false);
-      await sleep(380); if (dead()) return;
-    }
-
     async function run() {
       try {
         // ── ACT 1 — INPUT ─────────────────────────────────────────
         setAct(1);
-        await sleep(500); if (dead()) return;
+        await sleep(400); if (dead()) return;
 
         showRing('[data-demo-id="input-panel"]');
-        showTip("Watch how easy it is to add content →", '[data-demo-id="input-panel"]');
-        await sleep(1500); if (dead()) return;
+        showTip("Paste any content — text, PDF, URL, image →", '[data-demo-id="input-panel"]');
+        await sleep(1000); if (dead()) return;
         setHighlightRect(null); setTooltip(null);
 
-        await typeText(DEMO_TYPING_TEXT); if (dead()) return;
+        // Type faster (8ms per char)
+        propsRef.current.onSetInputText?.("");
+        let acc = "";
+        for (const char of DEMO_TYPING_TEXT) {
+          if (dead()) return;
+          acc += char;
+          propsRef.current.onSetInputText?.(acc);
+          const ms = char === "." ? 60 : char === "," ? 22 : char === " " ? 12 : 8;
+          await new Promise(r => setTimeout(r, ms));
+        }
+        if (dead()) return;
 
-        await sleep(400);
         showRing('[data-demo-id="submit-btn"]');
         showTip("Generating your full study package...", '[data-demo-id="submit-btn"]');
-        await sleep(900); if (dead()) return;
+        await sleep(700); if (dead()) return;
         setHighlightRect(null); setTooltip(null);
 
         // ── ACT 2 — LOADING ───────────────────────────────────────
@@ -169,55 +133,63 @@ export default function DemoRunner({
         setLoadingVisible(false);
         propsRef.current.onSetResult?.(DEMO_RESULT);
         propsRef.current.onSetStreaming?.(false);
-        await sleep(500); if (dead()) return;
+        await sleep(400); if (dead()) return;
 
         // ── ACT 3 — STREAMING RESULTS ─────────────────────────────
         setAct(3);
         propsRef.current.onSetActiveTab?.(0);
         propsRef.current.onSetStreamingSummary?.("");
-        await sleep(500); if (dead()) return;
+        await sleep(300); if (dead()) return;
 
-        showTip("Watch your summary appear in real time →", '[data-demo-id="tabs-row"]');
-        await sleep(900); if (dead()) return;
+        showTip("Summary streaming in real time →", '[data-demo-id="tabs-row"]');
+        await sleep(600); if (dead()) return;
         setTooltip(null);
 
-        await streamWords(DEMO_RESULT.summary, 52); if (dead()) return;
+        // Stream faster: 28ms/word
+        const words = DEMO_RESULT.summary.split(" ");
+        let sumAcc = "";
+        propsRef.current.onSetStreamingSummary?.("");
+        for (const word of words) {
+          if (dead()) return;
+          sumAcc += (sumAcc ? " " : "") + word;
+          propsRef.current.onSetStreamingSummary?.(sumAcc);
+          await new Promise(r => setTimeout(r, 28));
+        }
         propsRef.current.onSetStreamingSummary?.(null);
-        await sleep(1200); if (dead()) return;
+        await sleep(800); if (dead()) return;
 
         // ── ACT 4 — FLASHCARDS ────────────────────────────────────
         setAct(4);
         propsRef.current.onSetActiveTab?.(4);
-        showTip("6 flashcards — tap to flip →", '[data-demo-id="tabs-row"]');
-        await sleep(900); if (dead()) return;
+        showTip("Flip flashcards with spaced repetition →", '[data-demo-id="tabs-row"]');
+        await sleep(700); if (dead()) return;
         setTooltip(null);
 
         const flipCard = async (idx, prevRatings) => {
           propsRef.current.onSetFlashcard?.({ index: idx, flipped: false, ratings: prevRatings });
-          await sleep(900); if (dead()) return null;
+          await sleep(1300); if (dead()) return null;
           propsRef.current.onSetFlashcard?.({ index: idx, flipped: true, ratings: prevRatings });
-          await sleep(1000); if (dead()) return null;
+          await sleep(1500); if (dead()) return null;
           const next = { ...prevRatings, [idx]: "easy" };
           propsRef.current.onSetFlashcard?.({ index: idx, flipped: true, ratings: next });
-          await sleep(600);
+          await sleep(700);
           return next;
         };
 
         let ratings = {};
         ratings = (await flipCard(0, ratings)) ?? ratings; if (dead()) return;
         ratings = (await flipCard(1, ratings)) ?? ratings; if (dead()) return;
-        ratings = (await flipCard(2, ratings)) ?? ratings; if (dead()) return;
 
         // ── ACT 5 — QUIZ ──────────────────────────────────────────
         setAct(5);
         propsRef.current.onSetActiveTab?.(5);
-        showTip("Test your knowledge →", '[data-demo-id="tabs-row"]');
+        showTip("Quiz yourself — plausible distractors →", '[data-demo-id="tabs-row"]');
         await sleep(800); if (dead()) return;
         setTooltip(null);
 
-        const QUIZ_CORRECT = [1, 2, 3, 2, 1];
-        const THINK_MS    = [900, 600, 500, 500, 700];
-        const REVEAL_MS   = [1000, 700, 650, 650, 1000];
+        const QUIZ_CORRECT = [1, 2, 3];
+        const THINK_MS    = [1200, 1000, 900];
+        const REVEAL_MS   = [1400, 1200, 1300];
         let answers = [];
 
         for (let qi = 0; qi < QUIZ_CORRECT.length; qi++) {
@@ -226,7 +198,7 @@ export default function DemoRunner({
           propsRef.current.onSetQuiz?.({ qIndex: qi, selected: null, submitted: false, answers, done: false });
           await sleep(THINK_MS[qi]); if (dead()) return;
           propsRef.current.onSetQuiz?.({ qIndex: qi, selected: ca, submitted: false, answers, done: false });
-          await sleep(450); if (dead()) return;
+          await sleep(350); if (dead()) return;
           answers = [...answers, { selected: ca, correct: true, qIndex: qi }];
           propsRef.current.onSetQuiz?.({ qIndex: qi, selected: ca, submitted: true, answers, done: false });
           await sleep(REVEAL_MS[qi]); if (dead()) return;
@@ -234,108 +206,52 @@ export default function DemoRunner({
 
         // ── ACT 6 — CELEBRATION ───────────────────────────────────
         setAct(6);
-        propsRef.current.onSetQuiz?.({ qIndex: 4, selected: 1, submitted: true, answers, done: true });
-        await sleep(400); if (dead()) return;
+        propsRef.current.onSetQuiz?.({ qIndex: 2, selected: 3, submitted: true, answers, done: true });
+        await sleep(300); if (dead()) return;
         setShowConfetti(true);
         propsRef.current.addToast?.("🏆 Perfect Score! You've mastered this content.", "success");
-        await sleep(3500); if (dead()) return;
-        setShowConfetti(false);
-        await sleep(300); if (dead()) return;
-
-        // ── ACT 7 — LANGUAGE SHOWCASE ─────────────────────────────
-        setAct(7);
-        propsRef.current.onSetActiveTab?.(0); // switch to summary for language demo
-        await sleep(300); if (dead()) return;
-
-        // Intro tooltip
-        showTip("Watch StudyMaster work in other languages →", '[data-demo-id="tabs-row"]');
-        await sleep(900); if (dead()) return;
-        setTooltip(null);
-
-        // ── Step 7.1: French ──────────────────────────────────────
-        showRing('[data-demo-id="lang-selector"]');
-        showTip("Switching to Français...", '[data-demo-id="lang-selector"]');
-        await sleep(900); if (dead()) return;
-
-        await fadeSwap(() => {
-          propsRef.current.onChangeLanguage?.("fr");
-          propsRef.current.onSetDemoLangResult?.(DEMO_RESULT_FR);
-        }); if (dead()) return;
-
-        showTip("✓ Résumé généré en français 🇫🇷", '[data-demo-id="tabs-row"]');
         await sleep(2200); if (dead()) return;
-        setTooltip(null);
+        setShowConfetti(false);
         await sleep(200); if (dead()) return;
 
-        // ── Step 7.2: Arabic (RTL) ───────────────────────────────
-        showRing('[data-demo-id="lang-selector"]');
-        showTip("Switching to العربية...", '[data-demo-id="lang-selector"]');
-        await sleep(900); if (dead()) return;
+        // ── ACT 7 — AI TUTOR ──────────────────────────────────────
+        setAct(7);
+        propsRef.current.onSetActiveTab?.(0);
+        await sleep(400); if (dead()) return;
 
-        await fadeSwap(() => {
-          propsRef.current.onChangeLanguage?.("ar");
-          propsRef.current.onSetDemoLangResult?.(DEMO_RESULT_AR);
-        }); if (dead()) return;
-
-        showTip("✓ دعم عربي كامل — RTL مدعوم بالكامل 🇲🇦", '[data-demo-id="tabs-row"]');
-        await sleep(2500); if (dead()) return;
-        setTooltip(null);
-        await sleep(200); if (dead()) return;
-
-        // ── Step 7.3: Back to English ────────────────────────────
-        await fadeSwap(() => {
-          propsRef.current.onChangeLanguage?.("en");
-          propsRef.current.onSetDemoLangResult?.(null);
-        }); if (dead()) return;
-
-        showTip("Works in 5+ languages automatically ✓", '[data-demo-id="tabs-row"]');
+        showRing('[data-demo-id="tutor-btn"]');
+        showTip("Ask your AI Tutor anything about this material →", '[data-demo-id="tutor-btn"]');
         await sleep(1200); if (dead()) return;
-        setTooltip(null);
-        await sleep(300); if (dead()) return;
+        setHighlightRect(null); setTooltip(null);
 
-        // ── Step 7.4: TTS Demo ───────────────────────────────────
+        propsRef.current.addToast?.("🎤 \"What is overfitting?\" — AI Tutor answers instantly!", "info");
+        await sleep(1600); if (dead()) return;
+
         showRing('[data-demo-id="listen-btn"]');
         showTip("Listen to your summary in any language →", '[data-demo-id="listen-btn"]');
-        await sleep(1000); if (dead()) return;
+        await sleep(900); if (dead()) return;
         setHighlightRect(null); setTooltip(null);
 
         propsRef.current.onSetDemoTtsActive?.(true);
         try {
-          const firstPara = DEMO_RESULT.summary.split("\n")[0];
-          const utterance = new window.SpeechSynthesisUtterance(firstPara);
-          utterance.rate = 0.9;
+          const firstSentence = DEMO_RESULT.summary.split(".")[0] + ".";
+          const utterance = new window.SpeechSynthesisUtterance(firstSentence);
+          utterance.rate = 1.0;
           utterance.lang = "en-US";
           utterance.onend = () => propsRef.current.onSetDemoTtsActive?.(false);
           utterance.onerror = () => propsRef.current.onSetDemoTtsActive?.(false);
           window.speechSynthesis?.cancel();
           window.speechSynthesis?.speak(utterance);
-        } catch { /* TTS not supported — button still animates */ }
+        } catch { /* TTS not supported */ }
 
-        await sleep(3200); if (dead()) return;
+        await sleep(2200); if (dead()) return;
         window.speechSynthesis?.cancel();
         propsRef.current.onSetDemoTtsActive?.(false);
-        await sleep(400); if (dead()) return;
-
-        showTip("Perfect for commuting & auditory learners ✓", '[data-demo-id="tabs-row"]');
-        await sleep(1000); if (dead()) return;
-        setTooltip(null);
-
-        // ── ACT 8 — PREMIUM FEATURES ──────────────────────────────
-        setAct(8);
-        await sleep(600); if (dead()) return;
-
-        propsRef.current.addToast?.("📄 Study sheet downloaded!", "success");
-        await sleep(1500); if (dead()) return;
-
-        propsRef.current.onToggleTheme?.();
-        propsRef.current.addToast?.("🌙 Dark mode — looks great too!", "info");
-        await sleep(2200); if (dead()) return;
-        propsRef.current.onToggleTheme?.();
-        await sleep(800); if (dead()) return;
-
-        // ── ACT 9 — FINALE ────────────────────────────────────────
-        setAct(9);
         await sleep(300); if (dead()) return;
+
+        // ── ACT 8 — FINALE ────────────────────────────────────────
+        setAct(8);
+        await sleep(200); if (dead()) return;
         setShowFinale(true);
 
       } catch (err) {
@@ -402,26 +318,6 @@ export default function DemoRunner({
           style={{ position: "fixed", top: 0, left: 0, zIndex: 9999, pointerEvents: "none" }}
         />
       )}
-
-      {/* Language transition fade overlay */}
-      <AnimatePresence>
-        {langFading && (
-          <motion.div
-            key="lang-fade"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "var(--bg)",
-              zIndex: 9090,
-              pointerEvents: "none",
-            }}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Loading overlay */}
       <AnimatePresence>

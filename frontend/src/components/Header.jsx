@@ -2,7 +2,6 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../hooks/useIsMobile.js";
-import { CURRENT_VERSION } from "../data/versions.js";
 
 const LANGUAGES = [
   { code: "en", label: "EN" },
@@ -10,14 +9,18 @@ const LANGUAGES = [
   { code: "ar", label: "AR" },
 ];
 
-const Logo = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="3" width="18" height="18" rx="4" fill="var(--accent)" />
-    <path d="M8 8h8M8 12h6M8 16h4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+const Logo = ({ size = 30 }) => (
+  <svg width={size} height={size} viewBox="0 0 30 30" fill="none">
+    <rect width="30" height="30" rx="8" fill="var(--accent)" />
+    {/* Graduation cap */}
+    <path d="M15 9L22 13l-7 4-7-4L15 9Z" fill="white" />
+    <path d="M11 14.5v4c0 2.2 1.8 4 4 4s4-1.8 4-4v-4" fill="white" fillOpacity="0.35" />
+    <path d="M22 13v4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="22" cy="18.5" r="1.5" fill="white" />
   </svg>
 );
 
-export default function Header({ theme, onToggleTheme, lang, onChangeLang, streak, onOpenMenu, onOpenChangelog }) {
+export default function Header({ theme, onToggleTheme, lang, onChangeLang, streak, onOpenMenu }) {
   const { t } = useTranslation();
   const { isMobile, isTablet } = useIsMobile();
 
@@ -33,54 +36,44 @@ export default function Header({ theme, onToggleTheme, lang, onChangeLang, strea
         right: 0,
         height: headerHeight,
         background: theme === "dark"
-          ? "rgba(9,9,11,0.88)"
-          : "rgba(250,250,249,0.88)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+          ? "rgba(9,9,11,0.92)"
+          : "rgba(250,250,249,0.92)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
         borderBottom: "1px solid var(--border)",
         zIndex: 100,
         display: "flex",
         alignItems: "center",
-        padding: isMobile ? "0 12px" : "0 24px",
+        padding: isMobile ? "0 12px" : "0 28px",
         gap: 12,
         paddingTop: "env(safe-area-inset-top, 0px)",
       }}
     >
-      {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
-        <Logo />
+      {/* Logo + wordmark */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+        <Logo size={isMobile ? 26 : 30} />
         {!isMobile && (
-          <span style={{
-            fontSize: isTablet ? 16 : 18,
-            fontWeight: 600,
-            letterSpacing: "-0.02em",
-            color: "var(--text-primary)",
-            whiteSpace: "nowrap",
-          }}>
-            StudyMaster
-          </span>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+            <span style={{
+              fontSize: isTablet ? 15 : 17,
+              fontWeight: 700,
+              letterSpacing: "-0.03em",
+              color: "var(--text-primary)",
+            }}>
+              StudyMaster
+            </span>
+            <span style={{
+              fontSize: 9,
+              fontWeight: 600,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--accent)",
+              marginTop: 1,
+            }}>
+              AI
+            </span>
+          </div>
         )}
-        {/* Version badge — clickable */}
-        <button
-          onClick={onOpenChangelog}
-          title="What's new"
-          style={{
-            padding: "2px 7px",
-            background: "var(--accent-light)",
-            color: "var(--accent)",
-            border: "1px solid rgba(37,99,235,0.2)",
-            borderRadius: 999,
-            fontSize: 10,
-            fontWeight: 700,
-            fontFamily: "'Geist Mono', monospace",
-            cursor: "pointer",
-            letterSpacing: "0.02em",
-            flexShrink: 0,
-            transition: "background 0.15s",
-          }}
-        >
-          v{CURRENT_VERSION}
-        </button>
       </div>
 
       {/* Right side controls */}
@@ -113,13 +106,13 @@ export default function Header({ theme, onToggleTheme, lang, onChangeLang, strea
                 onClick={() => onChangeLang(l.code)}
                 style={{
                   padding: "5px 9px",
-                  height: 36,
+                  height: 34,
                   borderRadius: 6,
                   border: "none",
                   background: lang === l.code ? "var(--accent)" : "transparent",
                   color: lang === l.code ? "white" : "var(--text-secondary)",
                   fontSize: 12,
-                  fontWeight: 500,
+                  fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.15s",
                 }}
@@ -135,14 +128,14 @@ export default function Header({ theme, onToggleTheme, lang, onChangeLang, strea
           onClick={onToggleTheme}
           title="Toggle theme"
           style={{
-            width: isMobile ? 40 : 36,
-            height: isMobile ? 40 : 36,
+            width: isMobile ? 40 : 34,
+            height: isMobile ? 40 : 34,
             borderRadius: 8,
             border: "1px solid var(--border)",
             background: "var(--bg-secondary)",
             cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 16,
+            fontSize: 15,
             color: "var(--text-primary)",
             flexShrink: 0,
           }}
@@ -153,13 +146,13 @@ export default function Header({ theme, onToggleTheme, lang, onChangeLang, strea
         {/* IA Master badge — desktop only */}
         {!isMobile && !isTablet && (
           <div style={{
-            background: "var(--accent)",
+            background: "linear-gradient(135deg, var(--accent), #0891B2)",
             color: "white",
-            padding: "4px 10px",
+            padding: "4px 12px",
             borderRadius: 6,
             fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.05em",
+            fontWeight: 700,
+            letterSpacing: "0.06em",
             textTransform: "uppercase",
             whiteSpace: "nowrap",
           }}>

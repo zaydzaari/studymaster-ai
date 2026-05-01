@@ -91,6 +91,26 @@
     "subtitle": "Paste text, upload a PDF, or drop a URL — get summaries, flashcards and quizzes in seconds.",
     "demo": "See a live demo"
   },
+  "landing": {
+    "badge": "StudyMaster AI",
+    "headline": "Turn any content into a",
+    "headlineAccent": "complete study package",
+    "subtitle": "Paste text, upload a PDF, or link a URL — AI generates summaries, flashcards, quizzes, mind maps and more in seconds.",
+    "watchDemo": "Watch Demo",
+    "hintDesktop": "← Paste your content on the left",
+    "hintMobile": "↑ Add your content above",
+    "featuresTitle": "Everything in your study package",
+    "stepsTitle": "How it works",
+    "f0title": "Smart Summary", "f0desc": "Deep prose with concept relationships and key takeaways",
+    "f1title": "Flashcards", "f1desc": "Spaced repetition with confidence tracking — Hard / Okay / Easy",
+    "f2title": "Quiz", "f2desc": "5 intelligent questions with plausible distractors and explanations",
+    "f3title": "Mind Map", "f3desc": "Interactive visual concept map for the big picture",
+    "f4title": "Deep Dive", "f4desc": "Click any concept pill for an instant AI explanation",
+    "f5title": "AI Tutor", "f5desc": "Voice conversation with an expert professor about your material",
+    "s1title": "Add your content", "s1desc": "Paste text, upload a PDF, drop an image, or paste a URL",
+    "s2title": "AI builds your package", "s2desc": "Gemini analyzes and generates your full study kit in seconds",
+    "s3title": "Study smarter", "s3desc": "Switch between summary, flashcards, quiz, mind map, and AI tutor"
+  },
   "onboarding": {
     "step1": "Paste any course content here",
     "step2": "Click to generate your study package",

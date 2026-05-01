@@ -185,7 +185,7 @@ export default function HamburgerMenu({
               fontSize: 12,
               lineHeight: 1.8,
             }}>
-              <div style={{ fontWeight: 600, marginBottom: 2 }}>StudyMaster AI v1.0</div>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>StudyMaster AI</div>
               <div>IA Master 2 · Kazakoo × IPSE Morocco</div>
             </div>
           </motion.div>

@@ -91,6 +91,26 @@
     "subtitle": "Collez du texte, uploadez un PDF ou entrez une URL — obtenez résumés, fiches et quiz en quelques secondes.",
     "demo": "Voir une démo"
   },
+  "landing": {
+    "badge": "StudyMaster AI",
+    "headline": "Transformez n'importe quel contenu en",
+    "headlineAccent": "package d'étude complet",
+    "subtitle": "Collez du texte, uploadez un PDF ou entrez une URL — l'IA génère résumés, fiches, quiz, cartes mentales et plus en quelques secondes.",
+    "watchDemo": "Voir la démo",
+    "hintDesktop": "← Collez votre contenu à gauche",
+    "hintMobile": "↑ Ajoutez votre contenu ci-dessus",
+    "featuresTitle": "Tout dans votre package d'étude",
+    "stepsTitle": "Comment ça marche",
+    "f0title": "Résumé intelligent", "f0desc": "Prose détaillée avec relations conceptuelles et points clés",
+    "f1title": "Fiches mémoire", "f1desc": "Répétition espacée avec suivi de confiance — Difficile / Moyen / Facile",
+    "f2title": "Quiz", "f2desc": "5 questions intelligentes avec distracteurs plausibles et explications",
+    "f3title": "Carte mentale", "f3desc": "Carte conceptuelle visuelle interactive pour la vue d'ensemble",
+    "f4title": "Approfondissement", "f4desc": "Cliquez sur un concept pour une explication IA instantanée",
+    "f5title": "Tuteur IA", "f5desc": "Conversation vocale avec un professeur expert sur votre matière",
+    "s1title": "Ajoutez votre contenu", "s1desc": "Collez du texte, uploadez un PDF, une image ou une URL",
+    "s2title": "L'IA construit votre package", "s2desc": "Gemini analyse et génère votre kit d'étude complet en secondes",
+    "s3title": "Étudiez plus intelligemment", "s3desc": "Naviguez entre résumé, fiches, quiz, carte mentale et tuteur IA"
+  },
   "onboarding": {
     "step1": "Collez votre contenu de cours ici",
     "step2": "Cliquez pour générer votre package",

@@ -206,6 +206,7 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
         {!isOpen && (
           <motion.button
             key="unified-btn"
+            data-demo-id="tutor-btn"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
