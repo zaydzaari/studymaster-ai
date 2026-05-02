@@ -16,7 +16,7 @@ function sseHeaders(res) {
 }
 
 router.post('/', deepDiveLimiter, async (req, res) => {
-  const { messages, context } = req.body;
+  const { messages, context, attachments } = req.body;
   if (!messages?.length) {
     return res.status(400).json({ error: 'Messages required.' });
   }
@@ -24,10 +24,21 @@ router.post('/', deepDiveLimiter, async (req, res) => {
   try {
     sseHeaders(res);
 
-    const contents = messages.map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }],
-    }));
+    const contents = messages.map((m, i) => {
+      const isLast = i === messages.length - 1;
+      const parts = [];
+      // Attach files to the last user message only
+      if (isLast && m.role === 'user' && attachments?.length) {
+        for (const att of attachments) {
+          if (att.mimeType && att.data) {
+            parts.push({ inlineData: { mimeType: att.mimeType, data: att.data } });
+          }
+        }
+      }
+      if (m.content) parts.push({ text: m.content });
+      if (!parts.length) parts.push({ text: '' });
+      return { role: m.role === 'user' ? 'user' : 'model', parts };
+    });
 
     const stream = await ai.models.generateContentStream({
       model: MODEL,

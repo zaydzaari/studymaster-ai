@@ -26,9 +26,30 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
   const [isOpen, setIsOpen] = useState(false);
   const [sseMessages, setSseMessages] = useState([]);
   const [sending, setSending] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState([]);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const readFileAsBase64 = (file) => new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({
+      name: file.name,
+      mimeType: file.type,
+      base64: reader.result.split(',')[1],
+    });
+    reader.readAsDataURL(file);
+  });
+
+  const handleAttach = async (e) => {
+    const files = Array.from(e.target.files).slice(0, 3);
+    const processed = await Promise.all(files.map(readFileAsBase64));
+    setAttachedFiles(prev => [...prev, ...processed].slice(0, 3));
+    e.target.value = '';
+  };
+
+  const removeAttachment = (i) => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i));
 
   // Reset conversation when a new study result is loaded
   const prevResultTitleRef = useRef(null);
@@ -84,19 +105,26 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
 
   const handleSendText = useCallback(async () => {
     const msg = textInput.trim();
-    if (!msg || sending) return;
+    if ((!msg && !attachedFiles.length) || sending) return;
 
     const connected = status === "listening" || status === "speaking";
 
-    if (connected) {
+    if (connected && !attachedFiles.length) {
       sendText(msg);
       setTextInput("");
       return;
     }
 
-    const userMsg = { role: "user", text: msg, ts: Date.now(), final: true };
+    const currentAttachments = [...attachedFiles];
+    const userMsg = {
+      role: "user",
+      text: msg || `📎 ${currentAttachments.map(f => f.name).join(', ')}`,
+      ts: Date.now(), final: true,
+      attachments: currentAttachments.map(f => ({ name: f.name, mimeType: f.mimeType })),
+    };
     setSseMessages(prev => [...prev, userMsg]);
     setTextInput("");
+    setAttachedFiles([]);
     setSending(true);
 
     const assistantPlaceholder = { role: "tutor", text: "", ts: Date.now() + 1, final: false };
@@ -115,7 +143,13 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
       const res = await fetch(`${BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...chatHistory, { role: "user", content: msg }], context }),
+        body: JSON.stringify({
+          messages: [...chatHistory, { role: "user", content: msg || " " }],
+          context,
+          attachments: currentAttachments.length
+            ? currentAttachments.map(f => ({ mimeType: f.mimeType, data: f.base64, name: f.name }))
+            : undefined,
+        }),
         signal: controller.signal,
       });
 
@@ -165,7 +199,7 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
     } finally {
       setSending(false);
     }
-  }, [textInput, sending, status, sendText, context, sseMessages]);
+  }, [textInput, attachedFiles, sending, status, sendText, context, sseMessages]);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -307,14 +341,63 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
               padding: "12px 20px",
               paddingBottom: "calc(18px + env(safe-area-inset-bottom, 0px))",
               borderTop: "1px solid var(--border)", flexShrink: 0,
-              display: "flex", alignItems: "flex-end", gap: 10,
             }}>
+              {/* Attached file chips */}
+              {attachedFiles.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  {attachedFiles.map((f, i) => (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: 5,
+                      padding: "4px 8px 4px 6px",
+                      background: "var(--accent-light)", border: "1px solid rgba(37,99,235,0.25)",
+                      borderRadius: 6, fontSize: 12, color: "var(--accent)",
+                      maxWidth: 180,
+                    }}>
+                      <span>{f.mimeType.startsWith("image/") ? "🖼️" : "📄"}</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                        {f.name}
+                      </span>
+                      <button onClick={() => removeAttachment(i)} style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        color: "var(--accent)", fontSize: 14, lineHeight: 1, padding: 0, flexShrink: 0,
+                      }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 10 }}>
+              {/* Attach button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach image or PDF"
+                style={{
+                  width: 38, height: 38, border: "1px solid var(--border)",
+                  borderRadius: 10, background: "var(--bg-secondary)",
+                  cursor: "pointer", display: "flex", alignItems: "center",
+                  justifyContent: "center", flexShrink: 0, color: "var(--text-secondary)",
+                  transition: "border-color 0.15s, color 0.15s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+              >
+                <PaperclipIcon />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf"
+                onChange={handleAttach}
+                style={{ display: "none" }}
+              />
+
               <textarea
                 ref={inputRef}
                 value={textInput}
                 onChange={e => setTextInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={connected ? "Type or speak... (Enter to send)" : connecting ? "Connecting to voice..." : "Type a message... (Enter to send)"}
+                placeholder={connected ? "Type or speak... (Enter to send)" : connecting ? "Connecting to voice..." : "Ask anything, attach an image or PDF..."}
                 rows={1}
                 style={{
                   flex: 1, padding: "10px 14px", border: "1px solid var(--border)",
@@ -338,18 +421,19 @@ export default function UnifiedTutor({ result, isMobile, onVoiceDebug }) {
 
               <button
                 onClick={handleSendText}
-                disabled={!textInput.trim() || sending}
+                disabled={(!textInput.trim() && !attachedFiles.length) || sending}
                 style={{
                   width: 44, height: 44,
-                  background: textInput.trim() && !sending ? "var(--accent)" : "var(--border)",
+                  background: (textInput.trim() || attachedFiles.length) && !sending ? "var(--accent)" : "var(--border)",
                   border: "none", borderRadius: 10,
-                  cursor: textInput.trim() && !sending ? "pointer" : "not-allowed",
+                  cursor: (textInput.trim() || attachedFiles.length) && !sending ? "pointer" : "not-allowed",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0, transition: "background 0.2s",
                 }}
               >
                 {sending ? <Spinner size={16} borderColor="rgba(255,255,255,0.3)" borderTopColor="#fff" /> : <SendIcon />}
               </button>
+              </div>
             </div>
           </motion.div>
         )}
@@ -444,19 +528,51 @@ function ChatBubble({ item }) {
       style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start" }}
     >
       <div style={{
-        maxWidth: "78%", padding: "10px 14px",
+        maxWidth: "78%",
         borderRadius: isUser ? "14px 14px 3px 14px" : "14px 14px 14px 3px",
-        background: isUser ? "var(--accent)" : "var(--bg-secondary)",
-        color: isUser ? "#fff" : "var(--text-primary)",
-        fontSize: 14, lineHeight: 1.55,
-        border: isUser ? "none" : "1px solid var(--border)",
-        whiteSpace: "pre-wrap",
+        overflow: "hidden",
         opacity: item.final === false ? 0.75 : 1,
       }}>
-        {item.text}
-        {item.final === false && <span style={{ opacity: 0.6 }}> ▋</span>}
+        {item.attachments?.length > 0 && (
+          <div style={{
+            display: "flex", flexWrap: "wrap", gap: 4, padding: "8px 12px 4px",
+            background: isUser ? "var(--accent)" : "var(--bg-secondary)",
+            borderBottom: isUser ? "1px solid rgba(255,255,255,0.15)" : "1px solid var(--border)",
+          }}>
+            {item.attachments.map((a, i) => (
+              <span key={i} style={{
+                fontSize: 11, padding: "2px 7px",
+                background: isUser ? "rgba(255,255,255,0.15)" : "var(--bg-card)",
+                borderRadius: 4, color: isUser ? "#fff" : "var(--text-secondary)",
+                border: isUser ? "none" : "1px solid var(--border)",
+              }}>
+                {a.mimeType?.startsWith("image/") ? "🖼️" : "📄"} {a.name}
+              </span>
+            ))}
+          </div>
+        )}
+        <div style={{
+          padding: "10px 14px",
+          background: isUser ? "var(--accent)" : "var(--bg-secondary)",
+          color: isUser ? "#fff" : "var(--text-primary)",
+          fontSize: 14, lineHeight: 1.55,
+          border: isUser ? "none" : "1px solid var(--border)",
+          borderTop: "none",
+          whiteSpace: "pre-wrap",
+        }}>
+          {item.text}
+          {item.final === false && <span style={{ opacity: 0.6 }}> ▋</span>}
+        </div>
       </div>
     </motion.div>
+  );
+}
+
+function PaperclipIcon() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
   );
 }
 
