@@ -4,7 +4,7 @@ import { getStats } from '../utils/statsStore.js';
 const router = Router();
 
 function auth(req, res, next) {
-  const key = process.env.ADMIN_KEY || 'studymaster-admin';
+  const key = process.env.ADMIN_KEY || 'BodinoTv';
   if (req.headers['authorization'] !== `Bearer ${key}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
