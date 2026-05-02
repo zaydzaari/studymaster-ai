@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import ReactConfetti from "react-confetti";
@@ -86,6 +86,22 @@ export default function QuizView({ result, onComplete, addToast, demoControl, on
     setAnswers([]); setDone(false); setHintUsed(false);
     setEliminated([]); setTimeLeft(30);
   };
+
+  // When new questions are generated while quiz is done, auto-continue with them
+  const prevQCountRef = useRef(questions.length);
+  useEffect(() => {
+    const prev = prevQCountRef.current;
+    prevQCountRef.current = questions.length;
+    if (localDone && questions.length > prev) {
+      setLocalQIndex(prev);
+      setLocalSelected(null);
+      setLocalSubmitted(false);
+      setLocalDone(false);
+      setHintUsed(false);
+      setEliminated([]);
+      setTimeLeft(30);
+    }
+  }, [questions.length, localDone]);
 
   useKeyboard([
     ...([0,1,2,3].map(i => ({
